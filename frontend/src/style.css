@@ -35,7 +35,7 @@ html, body, #app {
     transform: scaleY(8);
   }
 }
-
+/*
 @keyframes moves {
   0% {
     transform: rotate(0deg);
@@ -52,4 +52,4 @@ html, body, #app {
   100% {
     transform: rotate(0deg);
   }
-}
+}*/

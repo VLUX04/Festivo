@@ -16,11 +16,11 @@ const navItems = [
     { label: 'Map', icon: mapIcon },
 ];
 
-const navButtonClass = 'group transition duration-333 ease-in-out border-2 border-[#483d30] h-1/2 px-5 text-[#fff3b0] hover:bg-[#553a1e] hover:border-[#fff3b0] hover:cursor-pointer active:bg-[#fff3b0] active:text-[#1a0f10] flex items-center justify-center gap-1';
+const navButtonClass = 'group transition duration-333 ease-in-out border-2 border-[#483d30] h-1/2 px-5 text-[#fff3b0] hover:bg-[#553a1e] hover:border-[#fff3b0] hover:cursor-pointer active:bg-[#fff3b0] active:text-[#540b0e] flex items-center justify-center gap-1';
 
 const Header: React.FC = () => {
     const [menuOpen, setMenuOpen] = React.useState(false);
-    const [isLogged] = React.useState(false);
+    const [isLogged] = React.useState(true);
     return (
     <header className='bg-[#1a0f10] flex h-22 border-b-3 border-[#fff3b0] justify-center'>
         <div className='flex w-[80%] justify-self-center'>
@@ -57,17 +57,17 @@ const Header: React.FC = () => {
                             <div className="relative h-7 w-7">
                                 <img src={profileIcon} alt="" className="h-7 w-7 object-contain rounded-full" aria-hidden="true"/>
                                 <svg className="absolute inset-0 w-full h-full -rotate-90"viewBox="0 0 40 40">
-                                    <circle cx="20" cy="20" r="19" fill="none" stroke="#fff3b0" strokeWidth="2" strokeDasharray="120" strokeDashoffset="120"  className="transition-all duration-700 ease-in-out group-hover:[stroke-dashoffset:0]"/>
+                                    <circle cx="20" cy="20" r="19" fill="none" stroke="#fff3b0" strokeWidth="3" strokeDasharray="120" strokeDashoffset="120"  className="transition-all duration-700 ease-in-out group-hover:[stroke-dashoffset:0]"/>
                                 </svg>
                             </div>
-                            <span>Profile</span>
+                            <span className='mb-[4px]'>Profile</span>
                         </button>
                     :
                         <button className='transition duration-333 ease-in-out text-xl text-[#fff3b0] hover:cursor-pointer hover:scale-110 flex items-center gap-1 group'>
-                            <div className="relative h-7 w-7">
-                                <img src={loginIcon} alt="" className="h-7 w-7 object-contain" aria-hidden="true"/>
+                            <div className="relative h-5 w-5">
+                                <img src={loginIcon} alt="" className="object-contain" aria-hidden="true"/>
                             </div>
-                            <span>Login</span>
+                            <span className='mb-[4px]'>Login</span>
                         </button>
                     }
                     
@@ -79,9 +79,9 @@ const Header: React.FC = () => {
                         aria-expanded={menuOpen}
                         onClick={() => setMenuOpen((prev) => !prev)}
                         className='flex flex-col h-5 w-7 gap-1 group cursor-pointer'>
-                        <div className={`transition duration-500 ease-in-out bg-[#fff3b0] w-[90%] h-2 ${menuOpen ? 'rotate-45 translate-y-[200%]' : 'group-hover:[animation:moves_0.5s_ease-in-out_infinite]'} group-hover:scale-110`}></div>
-                        <div className={`transition duration-500 ease-in-out bg-[#fff3b0] w-[90%] h-2 origin-center ${menuOpen ? 'scale-x-0 opacity-0' : 'group-hover:[animation:moves_0.5s_ease-in-out_infinite]'} group-hover:scale-110`}></div>
-                        <div className={`transition duration-500 ease-in-out bg-[#fff3b0] w-[90%] h-2 ${menuOpen ? '-rotate-45 -translate-y-[200%]' : 'group-hover:[animation:moves_0.5s_ease-in-out_infinite]'} group-hover:scale-110`}></div>
+                        <div className={`transition duration-500 ease-in-out bg-[#fff3b0] w-[90%] h-2 ${menuOpen ? 'rotate-45 translate-y-[200%]' : 'group-hover'} group-hover:scale-110`}></div>
+                        <div className={`transition duration-500 ease-in-out bg-[#fff3b0] w-[90%] h-2 origin-center ${menuOpen ? 'scale-x-0 opacity-0' : 'group-hover'} group-hover:scale-110`}></div>
+                        <div className={`transition duration-500 ease-in-out bg-[#fff3b0] w-[90%] h-2 ${menuOpen ? '-rotate-45 -translate-y-[200%]' : 'group-hover'} group-hover:scale-110`}></div>
                     </button>
                 </div>
             </div>
