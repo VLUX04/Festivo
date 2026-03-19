@@ -17,9 +17,9 @@ CREATE TABLE professional_profile (
 );
 
 -- COSTUMER
-CREATE TABLE costumer(
-    costumer_id PRIMARY KEY
-    FOREIGN KEY (costumer_id) REFERENCES users(user_id)
+CREATE TABLE customer(
+    costumer_id INT PRIMARY KEY,
+    FOREIGN KEY (costumer_id) REFERENCES users(id)
 )
 
 -- TAGS
@@ -41,8 +41,8 @@ CREATE TABLE friends (
     user1_id INT,
     user2_id INT,
     PRIMARY KEY (user1_id, user2_id),
-    FOREIGN KEY (user1_id) REFERENCES costumer(id),
-    FOREIGN KEY (user2_id) REFERENCES costumer(id)
+    FOREIGN KEY (user1_id) REFERENCES costumer(costumer_id),
+    FOREIGN KEY (user2_id) REFERENCES costumer(costumer_id)
 );
 
 -- FOLLOWS
@@ -140,7 +140,7 @@ CREATE TABLE professional_review (
 
 
 -- EVENT REVIEW
-CREATE TABLE professional_review (
+CREATE TABLE event_review (
     user_id INT,
     event_id INT,
     rating INT,
