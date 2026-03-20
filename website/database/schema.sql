@@ -24,7 +24,8 @@ CREATE TABLE customer(
 
 -- TAGS
 CREATE TABLE tags (
-    tag_name VARCHAR(100) PRIMARY KEY
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    tag_name VARCHAR(100)
 );
 
 -- CUSTOMER PREFERENCES
@@ -33,7 +34,7 @@ CREATE TABLE customer_preferences (
     tag_name VARCHAR(100),
     PRIMARY KEY (customer_id, tag_name),
     FOREIGN KEY (customer_id) REFERENCES customer(customer_id),
-    FOREIGN KEY (tag_name) REFERENCES tags(tag_name)
+    FOREIGN KEY (tag_name) REFERENCES tags(id)
 );
 
 -- EVENTS
@@ -55,7 +56,7 @@ CREATE TABLE event_tags (
     tag_name VARCHAR(100),
     PRIMARY KEY (event_id, tag_name),
     FOREIGN KEY (event_id) REFERENCES events(id),
-    FOREIGN KEY (tag_name) REFERENCES tags(tag_name)
+    FOREIGN KEY (tag_name) REFERENCES tags(id)
 );
 
 -- FRIENDS
