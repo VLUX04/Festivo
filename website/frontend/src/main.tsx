@@ -4,16 +4,11 @@ import './style.css'
 import Header from './components/header.tsx'
 import Footer from './components/footer.tsx'
 import LoginPage from './pages/login.tsx'
-import RegisterPage from './pages/register.tsx'
+import RegisterPage from './pages/register'
+import ProfilePage from './pages/profile'
 
 ReactDOM.createRoot(document.getElementById('app')!).render(
   <React.StrictMode>
-    <div className='app'>
-      <Header />
-      <main className='content flex justify-center'>
-        <RegisterPage />
-      </main>
-      <Footer />
-    </div>
+        <ProfilePage/>
   </React.StrictMode>
 )
