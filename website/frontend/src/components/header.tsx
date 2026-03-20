@@ -20,7 +20,7 @@ const navButtonClass = 'group transition duration-333 ease-in-out border-2 borde
 
 const Header: React.FC = () => {
     const [menuOpen, setMenuOpen] = React.useState(false);
-    const [isLogged] = React.useState(true);
+    const [isLogged] = React.useState(false);
     return (
     <header className='bg-[#1a0f10] flex h-22 border-b-3 border-[#fff3b0] justify-center'>
         <div className='flex w-[80%] justify-self-center'>

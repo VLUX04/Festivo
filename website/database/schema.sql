@@ -16,11 +16,11 @@ CREATE TABLE professional_profile (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
--- COSTUMER
+-- CUSTOMER
 CREATE TABLE customer(
-    costumer_id INT PRIMARY KEY,
-    FOREIGN KEY (costumer_id) REFERENCES users(id)
-)
+    customer_id INT PRIMARY KEY,
+    FOREIGN KEY (customer_id) REFERENCES users(id)
+);
 
 -- TAGS
 CREATE TABLE tags (
@@ -36,13 +36,35 @@ CREATE TABLE customer_preferences (
     FOREIGN KEY (tag_name) REFERENCES tags(name)
 );
 
+-- EVENT
+CREATE TABLE event (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    publisher_id INT,
+    venue VARCHAR(255),
+    start_date DATE,
+    end_date DATE,
+    target VARCHAR(255),
+    description TEXT,
+    FOREIGN KEY (publisher_id) REFERENCES professional_profile(user_id)
+);
+
+
+-- EVENT TAGS
+CREATE TABLE event_tags (
+    event_id INT ,
+    tag_name VARCHAR(100),
+    PRIMARY KEY (event_id, tag_name),
+    FOREIGN KEY (event_id) REFERENCES event(id),
+    FOREIGN KEY (tag_name) REFERENCES tags(name)
+);
+
 -- FRIENDS
 CREATE TABLE friends (
     user1_id INT,
     user2_id INT,
     PRIMARY KEY (user1_id, user2_id),
-    FOREIGN KEY (user1_id) REFERENCES costumer(costumer_id),
-    FOREIGN KEY (user2_id) REFERENCES costumer(costumer_id)
+    FOREIGN KEY (user1_id) REFERENCES customer(customer_id),
+    FOREIGN KEY (user2_id) REFERENCES customer(customer_id)
 );
 
 -- FOLLOWS
@@ -87,42 +109,31 @@ CREATE TABLE publication (
     publish_date DATE,
     description TEXT,
     likes INT DEFAULT 0,
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    event_id INT,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (event_id) REFERENCES event(id)
 );
 
 -- COMMENT 
 CREATE TABLE comment (
-    id INT PRIMARY KEY AUTO_INCREMENT,
     publication_id INT,
     user_id INT,
     text TEXT,
     publish_date DATE,
     likes INT DEFAULT 0,
+    PRIMARY KEY (user_id, publication_id),
     FOREIGN KEY (publication_id) REFERENCES publication(id),
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
--- EVENT
-CREATE TABLE event (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    professional_id INT,
-    venue VARCHAR(255),
-    start_date DATE,
-    end_date DATE,
-    target VARCHAR(255),
-    description TEXT,
-    FOREIGN KEY (professional_id) REFERENCES professional_profile(user_id)
-);
-
 -- APPLICATION 
 CREATE TABLE application (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    professional_id INT, 
+    id INT AUTO_INCREMENT,
+    publisher_id INT, 
     event_id INT,
     information TEXT,
     contact VARCHAR(255),
-    status ENUM('pending', 'accepted', 'rejected') DEFAULT 'pending',
-    FOREIGN KEY (professional_id) REFERENCES professional_profile(user_id),
+    FOREIGN KEY (publisher_id) REFERENCES professional_profile(user_id),
     FOREIGN KEY (event_id) REFERENCES event(id)
 );
 
@@ -148,5 +159,24 @@ CREATE TABLE event_review (
     text TEXT,
     PRIMARY KEY (user_id, event_id),
     FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (event_id) REFERENCES event(event_id)
+    FOREIGN KEY (event_id) REFERENCES event(id)
+);
+
+-- PROFESSIONAL HISTORY
+CREATE TABLE professional_history (
+    professional_id INT,
+    event_id INT,
+    PRIMARY KEY (professional_id, event_id),
+    FOREIGN KEY (professional_id) REFERENCES professional_profile(user_id),
+    FOREIGN KEY (event_id) REFERENCES event(id)
+);
+
+CREATE TABLE professional_invite(
+    sender_id INT,
+    receiver_id INT,
+    invite TEXT,
+    status ENUM("pending","accepted", "rejected") DEFAULT "pending",
+    PRIMARY KEY (sender_id, receiver_id),
+    FOREIGN KEY (sender_id) REFERENCES professional_profile(user_id),
+    FOREIGN KEY (receiver_id) REFERENCES professional_profile(user_id)
 );

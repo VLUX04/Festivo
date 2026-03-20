@@ -11,7 +11,7 @@ ReactDOM.createRoot(document.getElementById('app')!).render(
     <div className='app'>
       <Header />
       <main className='content flex justify-center'>
-        <RegisterPage />
+        <LoginPage />
       </main>
       <Footer />
     </div>
