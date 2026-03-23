@@ -3,10 +3,9 @@ import jwt from 'jsonwebtoken';
 import bcryptjs from 'bcryptjs';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import pool from './db.js';
 
 dotenv.config();
-
-const users: any = []; // temp in-memory storage
 
 // secret key for signing JWTs
 const SECRET_KEY = 'my_secret_key'; //WARNING: this should probably not be here in prod, also same for all users???
@@ -32,15 +31,18 @@ app.post('/register', async (req, res) => {
 	try {
 		const {username, password} = req.body;
 
-		const user = users.find((user: any)  => user.username === username);
-		if (user) return res.status(400).json({success: false, message: 'User already exists'});
+        const existing = await pool.query('SELECT 1 FROM users WHERE username = $1', [username]);
+		if (existing.rows.length > 0) return res.status(400).json({success: false, message: 'User already exists'});
 
 		const salt = await bcryptjs.genSalt(10);
 		const hashedPass = await bcryptjs.hash(password, 10);
 
-		users.push({username, password: hashedPass});
+        await pool.query(
+            'INSERT INTO users (username, password) VALUES ($1, $2)',
+            [username, hashedPass]
+        );
 
-		res.status(201).json({success: true, message: 'New user created!', users});
+		res.status(201).json({success: true, message: 'New user created!'});
 	} catch(err) {
 		console.error(err);
 		res.status(500).json({success: false, message: 'Internal server error'});
@@ -51,12 +53,13 @@ app.post('/login', async(req, res) => {
 	try {
 		const {username, password} = req.body;
 
-		const user = users.find((user: any) => user.username === username);
+        const result = await pool.query('SELECT 1 FROM users WHERE username = $1', [username]);
+        const user = result.rows[0]; 
 		if (!user) return res.status(404).json({success: false, message: 'User not found'});
 
 		const isPassValid = await bcryptjs.compare(password, user.password);
 		if (!isPassValid) {
-			return res.status(404).json({success: false, message: 'Invalid password'});
+			return res.status(401).json({success: false, message: 'Invalid password'});
 		}
 
 		// JWT
