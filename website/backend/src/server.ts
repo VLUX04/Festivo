@@ -30,7 +30,7 @@ app.get('/', (req, res) => {
 //
 app.post('/register', async (req, res) => {
 	try {
-		const {username, password} = req.body;
+		const {username, email, password, role} = req.body; // all non-nullable attributes in db
 
         const existing = await pool.query('SELECT 1 FROM users WHERE username = $1', [username]);
 		if (existing.rows.length > 0) return res.status(400).json({success: false, message: 'User already exists'});
@@ -39,8 +39,8 @@ app.post('/register', async (req, res) => {
 		const hashedPass = await bcryptjs.hash(password, 10);
 
         await pool.query(
-            'INSERT INTO users (username, password) VALUES ($1, $2)',
-            [username, hashedPass]
+            'INSERT INTO users (username, email, pass, role) VALUES ($1, $2, $3, $4)',
+            [username, email, hashedPass, role]
         );
 
 		res.status(201).json({success: true, message: 'New user created!'});
@@ -54,11 +54,11 @@ app.post('/login', async(req, res) => {
 	try {
 		const {username, password} = req.body;
 
-        const result = await pool.query('SELECT 1 FROM users WHERE username = $1', [username]);
+        const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
         const user = result.rows[0]; 
 		if (!user) return res.status(404).json({success: false, message: 'User not found'});
 
-		const isPassValid = await bcryptjs.compare(password, user.password);
+		const isPassValid = await bcryptjs.compare(password, user.pass);
 		if (!isPassValid) {
 			return res.status(401).json({success: false, message: 'Invalid password'});
 		}
