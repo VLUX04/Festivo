@@ -3,9 +3,10 @@ import jwt from 'jsonwebtoken';
 import bcryptjs from 'bcryptjs';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import pool from './db.js';
 
 dotenv.config();
+
+import pool from './db.js';
 
 // secret key for signing JWTs
 const SECRET_KEY = 'my_secret_key'; //WARNING: this should probably not be here in prod, also same for all users???
