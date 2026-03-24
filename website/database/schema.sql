@@ -1,11 +1,12 @@
 -- USERS
+CREATE TYPE user_role AS ENUM ('customer', 'professional');
 CREATE TABLE users (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id SERIAL PRIMARY KEY,
     username VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     pass VARCHAR(255) NOT NULL,
     information TEXT,
-    role ENUM('customer', 'professional') NOT NULL
+    role user_role NOT NULL
 );
 
 -- PROFESSIONAL PROFILE
@@ -17,15 +18,15 @@ CREATE TABLE professional_profile (
 );
 
 -- CUSTOMER
-CREATE TABLE customer(
+CREATE TABLE customer (
     customer_id INT PRIMARY KEY,
     FOREIGN KEY (customer_id) REFERENCES users(id)
 );
 
 -- TAGS
 CREATE TABLE tags (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tag_name VARCHAR(100)
+    id SERIAL PRIMARY KEY,
+    tag_name VARCHAR(100) UNIQUE
 );
 
 -- CUSTOMER PREFERENCES
@@ -34,12 +35,12 @@ CREATE TABLE customer_preferences (
     tag_name VARCHAR(100),
     PRIMARY KEY (customer_id, tag_name),
     FOREIGN KEY (customer_id) REFERENCES customer(customer_id),
-    FOREIGN KEY (tag_name) REFERENCES tags(id)
+    FOREIGN KEY (tag_name) REFERENCES tags(tag_name)
 );
 
 -- EVENTS
 CREATE TABLE events (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id SERIAL PRIMARY KEY,
     publisher_id INT,
     venue VARCHAR(255),
     sdate DATE,
@@ -49,14 +50,13 @@ CREATE TABLE events (
     FOREIGN KEY (publisher_id) REFERENCES professional_profile(user_id)
 );
 
-
 -- EVENTS TAGS
 CREATE TABLE event_tags (
-    event_id INT ,
+    event_id INT,
     tag_name VARCHAR(100),
     PRIMARY KEY (event_id, tag_name),
     FOREIGN KEY (event_id) REFERENCES events(id),
-    FOREIGN KEY (tag_name) REFERENCES tags(id)
+    FOREIGN KEY (tag_name) REFERENCES tags(tag_name)
 );
 
 -- FRIENDS
@@ -80,7 +80,7 @@ CREATE TABLE follows (
 
 -- CHAT
 CREATE TABLE chat (
-    id INT PRIMARY KEY AUTO_INCREMENT
+    id SERIAL PRIMARY KEY
 );
 
 -- CHAT PARTICIPANTS
@@ -94,18 +94,18 @@ CREATE TABLE chat_participants (
 
 -- MESSAGE
 CREATE TABLE message (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id SERIAL PRIMARY KEY,
     chat_id INT,
     sender_id INT,
     content TEXT,
-    sent_at DATETIME,
+    sent_at TIMESTAMP,
     FOREIGN KEY (chat_id) REFERENCES chat(id),
     FOREIGN KEY (sender_id) REFERENCES users(id)
 );
 
 -- PUBLICATION
 CREATE TABLE publication (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id SERIAL PRIMARY KEY,
     user_id INT,
     media VARCHAR(255),
     publish_date DATE,
@@ -116,7 +116,7 @@ CREATE TABLE publication (
     FOREIGN KEY (event_id) REFERENCES events(id)
 );
 
--- COMMENTS 
+-- COMMENTS
 CREATE TABLE comments (
     publication_id INT,
     user_id INT PRIMARY KEY,
@@ -127,10 +127,10 @@ CREATE TABLE comments (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
--- APPLICATION 
+-- APPLICATION
 CREATE TABLE application (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    publisher_id INT, 
+    id SERIAL PRIMARY KEY,
+    publisher_id INT,
     event_id INT,
     information TEXT,
     contact VARCHAR(255),
@@ -149,7 +149,6 @@ CREATE TABLE professional_review (
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (professional_id) REFERENCES professional_profile(user_id)
 );
-
 
 -- EVENTS REVIEW
 CREATE TABLE event_review (
@@ -172,11 +171,13 @@ CREATE TABLE professional_history (
     FOREIGN KEY (event_id) REFERENCES events(id)
 );
 
-CREATE TABLE professional_invite(
+-- PROFESSIONAL INVITE
+CREATE TYPE invite_answer AS ENUM ('pending', 'accepted', 'rejected');
+CREATE TABLE professional_invite (
     sender_id INT,
     receiver_id INT,
     invite TEXT,
-    answer ENUM('pending','accepted', 'rejected') DEFAULT 'pending',
+    answer invite_answer DEFAULT 'pending',
     PRIMARY KEY (sender_id, receiver_id),
     FOREIGN KEY (sender_id) REFERENCES professional_profile(user_id),
     FOREIGN KEY (receiver_id) REFERENCES professional_profile(user_id)
