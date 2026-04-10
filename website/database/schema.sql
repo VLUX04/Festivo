@@ -50,6 +50,15 @@ CREATE TABLE events (
     FOREIGN KEY (publisher_id) REFERENCES professional_profile(user_id)
 );
 
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+
+ALTER TABLE events
+ADD CONSTRAINT uq_venue_no_overlap
+EXCLUDE USING GIST (
+    venue WITH =,
+    daterange(sdate, edate, '[]') WITH &&
+);
+
 -- EVENTS TAGS
 CREATE TABLE event_tags (
     event_id INT,
@@ -182,3 +191,21 @@ CREATE TABLE professional_invite (
     FOREIGN KEY (sender_id) REFERENCES professional_profile(user_id),
     FOREIGN KEY (receiver_id) REFERENCES professional_profile(user_id)
 );
+
+-- IMAGES
+CREATE TABLE images (
+    id SERIAL PRIMARY KEY,
+    url VARCHAR(500) NOT NULL,
+    alt_text VARCHAR(255),
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- EVENT IMAGES
+CREATE TABLE event_images (
+    event_id INT REFERENCES events(id) ON DELETE CASCADE,
+    image_id INT REFERENCES images(id) ON DELETE CASCADE,
+    is_cover BOOLEAN DEFAULT FALSE,
+    PRIMARY KEY (event_id, image_id)
+);
+
+-- add images table for each entity that needs an image
