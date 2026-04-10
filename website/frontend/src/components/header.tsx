@@ -1,5 +1,6 @@
 import '../style.css'
 import React from 'react';
+import { Link } from 'react-router-dom';
 import eventsIcon from '../icons/events.png';
 import friendsIcon from '../icons/friends.png';
 import socialIcon from '../icons/social.png';
@@ -43,17 +44,17 @@ const Header: React.FC = () => {
             <div className='flex-3 flex'>
                 {navItems.map(({ label, icon }) => (
                     <div key={label} className='flex-1 flex justify-center place-items-center'>
-                        <button className={navButtonClass}>
+                        <Link to={`/${label.toLowerCase()}`} className={navButtonClass}>
                             <img src={icon} alt="" className='h-5 w-5 object-contain group-active:mix-blend-color' aria-hidden='true' />
                             <span>{label}</span>
-                        </button>
+                        </Link>
                     </div>
                 ))}
             </div>
             <div className='flex-1 flex justify-center place-items-center'>
                 <div className='flex-4 place-items-end'>
                     {isLogged ? 
-                        <button className='transition duration-333 ease-in-out text-xl text-[#fff3b0] hover:cursor-pointer hover:scale-110 flex items-center gap-1 group'>
+                        <Link to="/profile" className='transition duration-333 ease-in-out text-xl text-[#fff3b0] hover:cursor-pointer hover:scale-110 flex items-center gap-1 group'>
                             <div className="relative h-7 w-7">
                                 <img src={profileIcon} alt="" className="h-7 w-7 object-contain rounded-full" aria-hidden="true"/>
                                 <svg className="absolute inset-0 w-full h-full -rotate-90"viewBox="0 0 40 40">
@@ -61,14 +62,14 @@ const Header: React.FC = () => {
                                 </svg>
                             </div>
                             <span className='mb-[4px]'>Profile</span>
-                        </button>
+                        </Link>
                     :
-                        <button className='transition duration-333 ease-in-out text-xl text-[#fff3b0] hover:cursor-pointer hover:scale-110 flex items-center gap-1 group'>
+                        <Link to="/login" className='transition duration-333 ease-in-out text-xl text-[#fff3b0] hover:cursor-pointer hover:scale-110 flex items-center gap-1 group'>
                             <div className="relative h-5 w-5">
                                 <img src={loginIcon} alt="" className="object-contain" aria-hidden="true"/>
                             </div>
                             <span className='mb-[4px]'>Login</span>
-                        </button>
+                        </Link>
                     }
                     
                 </div>

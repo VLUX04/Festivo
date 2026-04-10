@@ -1,5 +1,6 @@
 import '../style.css'
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 const Footer: React.FC = () => (
     <footer className='bg-[#1a0f10] bottom-0 flex h-22 border-t-3 border-[#fff3b0] justify-center'>
@@ -8,9 +9,9 @@ const Footer: React.FC = () => (
                 © 2026 Festivo. All rights reserved.
             </div>
             <div className='place-content-center ml-auto'>
-                <a className='ml-10 text-[#a89060] hover:text-[#fff3b0]' href="">About</a>
-                <a className='ml-10 text-[#a89060] hover:text-[#fff3b0]' href="">Terms</a>
-                <a className='ml-10 text-[#a89060] hover:text-[#fff3b0]' href="">Contact</a>
+                <Link to="/about" className='ml-10 text-[#a89060] hover:text-[#fff3b0]'>About</Link>
+                <Link to="/terms" className='ml-10 text-[#a89060] hover:text-[#fff3b0]'>Terms</Link>
+                <Link to="/contact" className='ml-10 text-[#a89060] hover:text-[#fff3b0]'>Contact</Link>
             </div>
         </div>
     </footer>
