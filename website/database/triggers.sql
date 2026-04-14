@@ -62,3 +62,25 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER trg_update_professional_rating
 AFTER INSERT OR UPDATE OR DELETE ON professional_review
 FOR EACH ROW EXECUTE FUNCTION fn_update_professional_rating();
+    
+-- -------------------------------------------------------------
+-- Block applications to past events
+-- -------------------------------------------------------------
+CREATE OR REPLACE FUNCTION fn_block_application_past_event()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_sdate DATE;
+BEGIN
+    SELECT sdate INTO v_sdate FROM events WHERE id = NEW.event_id;
+ 
+    IF v_sdate < CURRENT_DATE THEN
+        RAISE EXCEPTION 'Cannot apply to event % because its start date (%) has already passed.', NEW.event_id, v_sdate;
+    END IF;
+ 
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+ 
+CREATE TRIGGER trg_block_application_past_event
+BEFORE INSERT ON application
+FOR EACH ROW EXECUTE FUNCTION fn_block_application_past_event();
