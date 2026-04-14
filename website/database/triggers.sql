@@ -107,3 +107,44 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER trg_block_self_application
 BEFORE INSERT ON application
 FOR EACH ROW EXECUTE FUNCTION fn_block_self_application();
+
+-- -------------------------------------------------------------
+-- Prevent duplicate chats between the same two users
+-- Fires after each row insert into chat_participants. Once a chat has exactly 2 participants, it checks whether another chat already exists with the exact same pair.
+-- -------------------------------------------------------------
+CREATE OR REPLACE FUNCTION fn_prevent_duplicate_chat()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_participant_count INT;
+    v_duplicate_count   INT;
+BEGIN
+    SELECT COUNT(*) INTO v_participant_count
+    FROM chat_participants
+    WHERE chat_id = NEW.chat_id;
+ 
+    -- Only run the check once both participants have been inserted
+    IF v_participant_count = 2 THEN
+        SELECT COUNT(*) INTO v_duplicate_count
+        FROM (
+            SELECT chat_id
+            FROM chat_participants
+            WHERE user_id IN (
+                SELECT user_id FROM chat_participants WHERE chat_id = NEW.chat_id
+            )
+            GROUP BY chat_id
+            HAVING COUNT(*) = 2
+        ) existing_chats
+        WHERE existing_chats.chat_id != NEW.chat_id;
+ 
+        IF v_duplicate_count > 0 THEN
+            RAISE EXCEPTION 'A chat between these two users already exists.';
+        END IF;
+    END IF;
+ 
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+ 
+CREATE TRIGGER trg_prevent_duplicate_chat
+AFTER INSERT ON chat_participants
+FOR EACH ROW EXECUTE FUNCTION fn_prevent_duplicate_chat();
