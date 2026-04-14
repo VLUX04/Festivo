@@ -84,3 +84,26 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER trg_block_application_past_event
 BEFORE INSERT ON application
 FOR EACH ROW EXECUTE FUNCTION fn_block_application_past_event();
+
+
+-- -------------------------------------------------------------
+-- Block publisher applying to own event
+-- -------------------------------------------------------------
+CREATE OR REPLACE FUNCTION fn_block_self_application()
+RETURNS TRIGGER AS $$
+DECLARE 
+    v_publisher_id INT;
+BEGIN
+    SELECT publisher_id INTO v_publisher_id FROM professional_profile WHERE id = NEW.event_id;
+
+    IF v_publisher_id == NEW.publisher_id THEN
+        RAISE EXCEPTION 'Professional % cannot apply to their own event (%).', NEW.publisher_id, NEW.event_id;
+    END IF;
+
+    RETURN NEW;
+END; 
+$$ LANGUAGE plpgsql;
+ 
+CREATE TRIGGER trg_block_self_application
+BEFORE INSERT ON application
+FOR EACH ROW EXECUTE FUNCTION fn_block_self_application();
