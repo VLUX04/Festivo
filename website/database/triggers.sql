@@ -148,3 +148,24 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER trg_prevent_duplicate_chat
 AFTER INSERT ON chat_participants
 FOR EACH ROW EXECUTE FUNCTION fn_prevent_duplicate_chat();
+
+
+-- -------------------------------------------------------------
+-- Auto-insert into professional_history when an invite is accepted
+-- -------------------------------------------------------------
+CREATE OR REPLACE FUNCTION fn_invite_accepted_to_history()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.answer = 'accepted' AND (OLD.answer IS DISTINCT FROM 'accepted') THEN
+        INSERT INTO professional_history (professional_id, event_id)
+        VALUES (NEW.receiver_id, NEW.event_id)
+        ON CONFLICT DO NOTHING;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_invite_accepted_to_history
+AFTER UPDATE ON professional_invite
+FOR EACH ROW EXECUTE FUNCTION fn_invite_accepted_to_history();

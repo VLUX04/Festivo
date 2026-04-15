@@ -185,11 +185,13 @@ CREATE TYPE invite_answer AS ENUM ('pending', 'accepted', 'rejected');
 CREATE TABLE professional_invite (
     sender_id INT,
     receiver_id INT,
+    event_id INT NOT NULL,
     invite TEXT,
     answer invite_answer DEFAULT 'pending',
     PRIMARY KEY (sender_id, receiver_id),
     FOREIGN KEY (sender_id) REFERENCES professional_profile(user_id),
-    FOREIGN KEY (receiver_id) REFERENCES professional_profile(user_id)
+    FOREIGN KEY (receiver_id) REFERENCES professional_profile(user_id),
+    FOREIGN KEY (event_id) REFERENCES events(id)
 );
 
 -- IMAGES
