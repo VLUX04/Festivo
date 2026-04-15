@@ -149,7 +149,6 @@ CREATE TRIGGER trg_prevent_duplicate_chat
 AFTER INSERT ON chat_participants
 FOR EACH ROW EXECUTE FUNCTION fn_prevent_duplicate_chat();
 
-
 -- -------------------------------------------------------------
 -- Auto-insert into professional_history when an invite is accepted
 -- -------------------------------------------------------------
