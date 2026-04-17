@@ -1,3 +1,15 @@
+TRUNCATE TABLE
+    professional_history, professional_invite,
+    event_review, professional_review,
+    application, comments, publication,
+    message, chat_participants, chat,
+    follows, friends,
+    event_tags, event_images, images,
+    events,
+    professional_profile,
+    users
+RESTART IDENTITY CASCADE;
+
 -- USERS
 INSERT INTO users (id, username, email, pass, role) VALUES
 (1, 'jazzmaster', 'jazz@example.com', 'hashedpass', 'professional'),
@@ -17,7 +29,6 @@ INSERT INTO professional_profile (user_id) VALUES
 ON CONFLICT DO NOTHING;
 
 -- EVENTS
-TRUNCATE TABLE events RESTART IDENTITY CASCADE;
 INSERT INTO events (publisher_id, venue, sdate, edate, target, description) VALUES
 (1, 'Madison Square Garden, New York', '2026-05-10', '2026-05-10', 'Music lovers', 'An unforgettable night of live jazz featuring world-renowned artists.'),
 (2, 'Royal Albert Hall, London', '2026-06-01', '2026-06-03', 'Art enthusiasts', 'A three-day contemporary art exhibition showcasing emerging European artists.'),

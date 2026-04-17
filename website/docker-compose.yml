@@ -13,6 +13,7 @@ services:
       - ./database/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
       - ./database/seed.sql:/docker-entrypoint-initdb.d/02_seed.sql
       - ./database/populate.sql:/docker-entrypoint-initdb.d/03_populate.sql
+      - ./database/populate.sql:/docker-entrypoint-initdb.d/04_triggers.sql
   backend:
     build: ./backend
     restart: always
