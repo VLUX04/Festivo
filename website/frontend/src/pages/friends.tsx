@@ -18,12 +18,12 @@ const FriendsPage: React.FC = () => {
 
   return (
     <PageLayout>
-      <div className='w-full p-4 space-y-6 flex flex-col items-center'>
+      <div className='w-full p-4 space-y-6 flex flex-col items-center mt-6'>
         <div className='w-[82%] bg-[#1a0f10] border-3 border-[#fff3b0] p-6'>
             <h1 className='text-[#fff3b0] text-5xl font-bold mb-6'>FRIENDS & COMMUNITY</h1>
             <p className='text-[#a89060] text-xl'>Connect with friends and discover who's attending events near you.</p>
         </div>
-        <div className='w-[82%] space-y-8'>
+        <div className='w-[82%] space-y-8 mt-6'>
           <section>
             <h2 className='text-[#fff3b0] text-3xl font-bold mb-4'>Friends</h2>
             <div className='grid grid-cols-3 gap-6'>
