@@ -3,16 +3,16 @@ import PageLayout from "../components/pageLayout";
 import CompleteProfile from "../components/completeProfile";
 import AccountTypeBadge from "../components/accountType";
 
-const CustomerCustomizationPage: React.FC = () => {
+const PromoterCustomizationPage: React.FC = () => {
     return (
         <PageLayout>
                 <CompleteProfile
                     title="COMPLETE YOUR PROFILE"
                     subtitle="Tell us a bit about yourself to personalize your Festivo experience."
                 />
-                <AccountTypeBadge accountType="Event Lover"/>
+                <AccountTypeBadge accountType="Promoter"/>
         </PageLayout>
     );
 };
 
-export default CustomerCustomizationPage;
+export default PromoterCustomizationPage;
