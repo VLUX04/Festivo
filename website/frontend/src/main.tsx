@@ -13,6 +13,7 @@ import SocialPage from './pages/social'
 import WorkPage from './pages/work'
 import MapPage from './pages/map'
 import ContactPage from './pages/contact'
+import AccountCustomizationPage from './pages/account'
 
 ReactDOM.createRoot(document.getElementById('app')!).render(
   <React.StrictMode>
@@ -30,6 +31,7 @@ ReactDOM.createRoot(document.getElementById('app')!).render(
         <Route path="/work" element={<WorkPage />} />
         <Route path="/map" element={<MapPage />} />
         <Route path="/contact" element={<ContactPage />} />
+        <Route path="/account" element={<AccountCustomizationPage />}/>
       </Routes>
     </BrowserRouter>
   </React.StrictMode>
