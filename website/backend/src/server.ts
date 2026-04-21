@@ -15,7 +15,7 @@ const SECRET_KEY = 'my_secret_key'; //WARNING: this should probably not be here 
 const app = express();
 const PORT = 3000;
 
-app.use(cors({origin: 'http://127.0.0.1:5173'}));
+app.use(cors({origin: 'http://0.0.0.0:5173', credentials: true}));
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 
@@ -31,7 +31,8 @@ app.get('/', (req, res) => {
 //
 app.post('/register', async (req, res) => {
 	try {
-		const {username, name, email, password, role} = req.body; // all non-nullable attributes in db
+		const {username, name, email, password} = req.body; // all non-nullable attributes in db, except role
+		const role = "customer";
 
 		// check if the account already exists
         const existing = await pool.query('SELECT 1 FROM users WHERE email = $1', [email]);
@@ -51,6 +52,7 @@ app.post('/register', async (req, res) => {
         );
 
 		res.status(201).json({success: true, message: 'New user created!'});
+		console.log("Registration successful");
 	} catch(err) {
 		console.error(err);
 		res.status(500).json({success: false, message: 'Internal server error'});
