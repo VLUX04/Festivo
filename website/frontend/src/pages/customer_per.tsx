@@ -2,7 +2,6 @@ import React from "react";
 import PageLayout from "../components/pageLayout";
 import CompleteProfile from "../components/completeProfile";
 import Preferences from "../components/preferences";
-import preferences_icon from "../icons/price.png";
 import PreferencesBadge from "../components/preferencesBadge";
 
 const CustomerCustomizationPage: React.FC = () => {

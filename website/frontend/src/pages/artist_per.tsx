@@ -2,6 +2,7 @@ import React from "react";
 import PageLayout from "../components/pageLayout";
 import CompleteProfile from "../components/completeProfile";
 import Preferences from "../components/preferences";
+import StyleBadge from "../components/styleBadge";
 
 const ArtistCustomizationPage: React.FC = () => {
     return (
@@ -11,6 +12,7 @@ const ArtistCustomizationPage: React.FC = () => {
                     subtitle="Tell us a bit about yourself to personalize your Festivo experience."
                 />
                 <Preferences accountType="Artist"/>
+                <StyleBadge/>
         </PageLayout>
     );
 };

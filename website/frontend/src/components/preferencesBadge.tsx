@@ -50,6 +50,7 @@ const PreferencesBadge: React.FC = () => {
                 </button>
             </div>
 
+            <p className="text-[#fff3b0] mt-2">Suggested: </p>
             <div className="flex flex-row flex-wrap gap-2 mt-3">
                 {genres.map((genre) => (
                     <button
