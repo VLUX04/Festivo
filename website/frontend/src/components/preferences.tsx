@@ -39,7 +39,7 @@ const Preferences: React.FC<AccountTypeBadgeProps> = ({ accountType }) => {
                 </div>
                 <textarea
                     placeholder="Your story, interests, or what you do..."
-                    className="w-full mt-4 mb-2 p-3 bg-[#0a0505] border-3 border-[#483d30] text-[#fff3b0] placeholder-[] resize-none h-32 focus:outline-none focus:border-[#a89a60]"/>
+                    className="w-full mt-4 mb-2 p-3 bg-[#0a0505] border-3 border-[#483d30] text-[#fff3b0] placeholder-[#91805D] transition-colors duration-300 resize-none h-30 focus:outline-none focus:border-[#a89a60]"/>
             </div>
 
             <div className="w-[50em] h-auto px-6 py-4 m-7 mb-3 bg-[#1a0f10] border-3 border-[#483d30] flex flex-col shadow-[15px_15px_0_0_#231c16]">
@@ -48,9 +48,10 @@ const Preferences: React.FC<AccountTypeBadgeProps> = ({ accountType }) => {
                     <h2 className="text-[#fff3b0] text-3xl font-bold">Location</h2>
                 </div>
                 <p className="text-[#fff3b0]">Where you are based</p>
-                <textarea
+                <input
+                    type="text"
                     placeholder="e.g., Lisboa, Porto, Coimbra, ..."
-                    className="w-full mt-4 mb-2 p-3 bg-[#0a0505] border-3 border-[#483d30] text-[#fff3b0] placeholder-[] resize-none h-14 focus:outline-none focus:border-[#a89a60]"/>
+                    className="w-full mt-4 mb-2 px-3 py-2 bg-[#0a0505] border-3 border-[#483d30] text-[#fff3b0] placeholder-[#91805D] transition-colors duration-300 focus:outline-none focus:border-[#a89a60]"/>
             </div>
         </div> 
     );
