@@ -42,7 +42,7 @@ const RegisterPage: React.FC = () => {
 		  const response = await fetch('http://localhost:3000/register' ,{ //WARNING: localhost != 0.0.0.0 - ISMA
 			  method: 'POST',
 		  	  headers: {
-				  'Content-Type': 'application:json',
+				  'Content-Type': 'application/json',
 			  }	,
 			  body: JSON.stringify(formData)
 		  });
@@ -74,7 +74,7 @@ const RegisterPage: React.FC = () => {
   return (
     <PageLayout>
         <div className='w-[28em] h-auto pt-5 m-7 self-center bg-[#1a0f10] border-3 border-[#fff3b0] text-center flex flex-col shadow-[15px_15px_0_0_#231c16]'>
-		<form onSubmit={handleSubmit} className="registration-form">
+		<form onSubmit={handleSubmit}>
             <h1 className='text-5xl font-bold text-[#fff3b0] mt-5'>JOIN FESTIVO</h1>
             <p className='text-[#a89060] mt-5'>Create your account to start discovering events</p>
 

@@ -3,8 +3,7 @@ import jwt from 'jsonwebtoken';
 import bcryptjs from 'bcryptjs';
 import cors from 'cors';
 import dotenv from 'dotenv';
-
-dotenv.config();
+import bodyParser from 'body-parser';
 
 import pool from './db.js';
 import { isValidEmail } from './utils.js';
@@ -13,11 +12,16 @@ import { isValidEmail } from './utils.js';
 const SECRET_KEY = 'my_secret_key'; //WARNING: this should probably not be here in prod, also same for all users???
 
 const app = express();
-const PORT = 3000;
+app.use(bodyParser.json());
+app.use(
+  bodyParser.urlencoded({
+    extended: true,
+  }),
+);
+dotenv.config();
+const PORT = process.env.PORT || 3000;
 
-app.use(cors({origin: 'http://0.0.0.0:5173', credentials: true}));
-app.use(express.json());
-app.use(express.urlencoded({extended: true}));
+app.use(cors({origin: 'http://localhost:5173', credentials: true}));
 
 //
 // GETS
@@ -31,6 +35,7 @@ app.get('/', (req, res) => {
 //
 app.post('/register', async (req, res) => {
 	try {
+		console.log(req.body);
 		const {username, name, email, password} = req.body; // all non-nullable attributes in db, except role
 		const role = "customer";
 
