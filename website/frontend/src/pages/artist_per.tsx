@@ -3,18 +3,17 @@ import PageLayout from "../components/pageLayout";
 import CompleteProfile from "../components/completeProfile";
 import Preferences from "../components/preferences";
 import StyleBadge from "../components/styleBadge";
+import CompleteSetup from "../components/completeSetup";
 
 const ArtistCustomizationPage: React.FC = () => {
     const [, setGenre] = useState<string>("");
     const [, setProfileData] = useState({ bio: "", location: "" });
     return (
         <PageLayout>
-                <CompleteProfile
-                    title="COMPLETE YOUR PROFILE"
-                    subtitle="Tell us a bit about yourself to personalize your Festivo experience."
-                />
+                <CompleteProfile/>
                 <Preferences accountType="Artist" onChange={setProfileData}/>
                 <StyleBadge onSelect={setGenre}/>
+                <CompleteSetup/>
         </PageLayout>
     );
 };

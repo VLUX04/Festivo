@@ -9,12 +9,12 @@ const StyleBadge: React.FC<StyleBadgeProps> = ({ onSelect }) => {
     const genres = ["Techno", "House", "Jazz", "Rock", "Hip Hop", "Eletronic", "Theatre", "Art", "Cinema", "Dance", "Comedy", "Classical"];
 
     return (
-        <div className="self-center w-[50em] h-auto px-6 py-4 m-7 mb-3 bg-[#1a0f10] border-3 border-[#483d30] flex flex-col shadow-[15px_15px_0_0_#231c16]">
+        <div className="self-center w-[50em] h-auto px-6 py-4 m-7 mb-3 bg-[#1a0f10] border-3 border-[#483d30] flex flex-col">
             <div className="flex flex-row items-center gap-2 mb-3">
                 <img src={preferences_icon} alt="Preferences" className="w-8 h-8 object-contain"/>
                 <h2 className="text-[#fff3b0] text-3xl font-bold ml-1">Your Style</h2>
             </div>
-            <p className="text-[#fff3b0]">Your primary artistic style or genre.</p>
+            <p className="text-[#fff3b0]">Your primary artistic style or genre</p>
 
             <select
                 defaultValue=""

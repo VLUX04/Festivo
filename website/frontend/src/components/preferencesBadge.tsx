@@ -27,7 +27,7 @@ const PreferencesBadge: React.FC<PreferenceBadgeProps> = ({ onChange }) => {
     const genres = ["Techno", "House", "Jazz", "Rock", "Hip Hop", "Eletronic", "Theatre", "Art", "Cinema", "Dance", "Comedy", "Classical"];
 
     return (
-        <div className="self-center w-[50em] h-auto px-6 py-4 m-7 mb-3 bg-[#1a0f10] border-3 border-[#483d30] flex flex-col shadow-[15px_15px_0_0_#231c16]">
+        <div className="self-center w-[50em] h-auto px-6 py-4 m-7 mb-3 bg-[#1a0f10] border-3 border-[#483d30] flex flex-col">
             <div className="flex flex-row items-center gap-2 mb-3">
                 <img src={preferences_icon} alt="Preferences" className="w-8 h-8 object-contain"/>
                 <h2 className="text-[#fff3b0] text-3xl font-bold ml-1">Your Preferences</h2>
@@ -63,7 +63,7 @@ const PreferencesBadge: React.FC<PreferenceBadgeProps> = ({ onChange }) => {
                 </button>
             </div>
 
-            <p className="text-[#fff3b0] mt-2">Suggested: </p>
+            <p className="text-[#fff3b0] mt-2">Suggestions</p>
             <div className="flex flex-row flex-wrap gap-2 mt-3">
                 {genres.map((genre) => (
                     <button
