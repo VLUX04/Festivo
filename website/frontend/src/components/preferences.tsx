@@ -12,7 +12,7 @@ const Preferences: React.FC<AccountTypeBadgeProps> = ({ accountType }) => {
 
     return (
        <div className="flex flex-col items-center w-full">
-            <div className="w-[45em] h-auto px-6 py-5 m-7 bg-[#1a0f10] border-3 border-[#fff3b0] flex flex-row items-center justify-between shadow-[15px_15px_0_0_#231c16]">
+            <div className="w-[50em] h-auto px-6 py-4 m-7 mb-3 bg-[#1a0f10] border-3 border-[#fff3b0] flex flex-row items-center justify-between shadow-[15px_15px_0_0_#231c16]">
                 <div className="flex flex-row items-center gap-4">
                     <div className="w-14 h-14 border-3 border-[#a89a60] flex items-center justify-center">
                         <img src={profile_icon} alt="Profile" className="w-8 h-8 object-contain"/>
@@ -32,7 +32,7 @@ const Preferences: React.FC<AccountTypeBadgeProps> = ({ accountType }) => {
                 </button>
             </div>
 
-            <div className="w-[45em] h-auto px-6 py-5 m-7 bg-[#1a0f10] border-3 border-[#483d30] flex flex-col shadow-[15px_15px_0_0_#231c16]">
+            <div className="w-[50em] h-auto px-6 py-4 m-7 mb-3 bg-[#1a0f10] border-3 border-[#483d30] flex flex-col shadow-[15px_15px_0_0_#231c16]">
                 <div className="text-left">
                     <h2 className="text-[#fff3b0] text-3xl font-bold mb-3">About you</h2>
                     <p className="text-[#fff3b0]">Tell us about yourself</p>
@@ -42,7 +42,7 @@ const Preferences: React.FC<AccountTypeBadgeProps> = ({ accountType }) => {
                     className="w-full mt-4 mb-2 p-3 bg-[#0a0505] border-3 border-[#483d30] text-[#fff3b0] placeholder-[] resize-none h-32 focus:outline-none focus:border-[#a89a60]"/>
             </div>
 
-            <div className="w-[45em] h-auto px-6 py-5 m-7 bg-[#1a0f10] border-3 border-[#483d30] flex flex-col shadow-[15px_15px_0_0_#231c16]">
+            <div className="w-[50em] h-auto px-6 py-4 m-7 mb-3 bg-[#1a0f10] border-3 border-[#483d30] flex flex-col shadow-[15px_15px_0_0_#231c16]">
                 <div className="flex flex-row items-center gap-2 mb-3">
                     <img src={location_icon} alt="Location" className="w-8 h-8 object-contain"/>
                     <h2 className="text-[#fff3b0] text-3xl font-bold">Location</h2>
