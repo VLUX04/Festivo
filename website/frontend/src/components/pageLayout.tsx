@@ -10,7 +10,7 @@ type PageLayoutProps = {
 const PageLayout: React.FC<PageLayoutProps> = ({ children, mainClassName = '' }) => (
   <div className='app'>
     <Header />
-    <main className={'content flex justify-center ' + mainClassName}>
+    <main className={'content flex flex-col ' + mainClassName}>
       {children}
     </main>
     <Footer />

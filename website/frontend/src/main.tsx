@@ -13,6 +13,10 @@ import SocialPage from './pages/social'
 import WorkPage from './pages/work'
 import MapPage from './pages/map'
 import ContactPage from './pages/contact'
+import AccountCustomizationPage from './pages/account'
+import CustomerCustomizationPage from './pages/customer_per'
+import ArtistCustomizationPage from './pages/artist_per'
+import PromoterCustomizationPage from './pages/promoter_per'
 
 ReactDOM.createRoot(document.getElementById('app')!).render(
   <React.StrictMode>
@@ -30,6 +34,10 @@ ReactDOM.createRoot(document.getElementById('app')!).render(
         <Route path="/work" element={<WorkPage />} />
         <Route path="/map" element={<MapPage />} />
         <Route path="/contact" element={<ContactPage />} />
+        <Route path="/account" element={<AccountCustomizationPage />}/>
+        <Route path="/customer_per" element={<CustomerCustomizationPage />}/>
+        <Route path="/artist_per" element={<ArtistCustomizationPage />}/>
+        <Route path="/promoter_per" element={<PromoterCustomizationPage />}/>
       </Routes>
     </BrowserRouter>
   </React.StrictMode>
