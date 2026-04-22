@@ -10,9 +10,9 @@ const highlightedEvents = eventsTempData.slice(0, 2);
 const EventsPage: React.FC = () => {
   return (
     <PageLayout>
-      <div className='w-full bg-[#170b0c] px-4 py-8 text-[#fff3b0] sm:px-6 lg:px-10 lg:py-10'>
+      <div className='w-full bg-[#170b0c] text-[#fff3b0] px-6 px-10 py-16'>
         <div className='mx-auto flex w-[82%] flex-col gap-8'>
-          <div className='border-4 border-[#fff3b0] bg-[#1a0f10] p-8'>
+          <div className='border-4 border-[#fff3b0] bg-[#1a0f10] p-8 mb-8'>
             <h1 className='mb-6 text-5xl font-bold text-[#fff3b0]'>DISCOVER EVENTS</h1>
             <p className='text-xl text-[#a89060]'>
               Find cultural experiences, concerts, exhibitions, and gatherings happening around you.
