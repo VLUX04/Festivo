@@ -35,3 +35,12 @@ html, body, #app {
     transform: scaleY(8);
   }
 }
+
+.card-icon {
+    transform: rotate(8deg);
+    transition: transform 0.3s;
+}
+
+.card-button:hover .card-icon {
+    transform: rotate(0deg);
+}
