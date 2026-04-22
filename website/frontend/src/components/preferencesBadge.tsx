@@ -1,14 +1,27 @@
 import React, { useState } from "react";
-import preferences_icon from "../icons/price.png"
+import preferences_icon from "../icons/price.png";
 
-const PreferencesBadge: React.FC = () => {
+type PreferenceBadgeProps = {
+    onChange: (preferences: string[]) => void;
+};
+
+const PreferencesBadge: React.FC<PreferenceBadgeProps> = ({ onChange }) => {
     const [input, setInput] = useState("");
     const [preferences, setPreferences] = useState<string[]>([]);
 
-    const handleAdd = () => {
-        if (input.trim() === "" || preferences.length >= 10) return;
-        setPreferences([...preferences, input.trim()]);
+    const addPreference = (pref: string) => {
+        pref = pref.trim();
+        if (pref === "" || preferences.includes(pref) || preferences.length >= 10) return;
+        const updated = [...preferences, pref];
+        setPreferences(updated);
+        onChange(updated);
         setInput("");
+    };
+
+    const removePreference = (index: number) => {
+        const updated = preferences.filter((_, i) => i !== index);
+        setPreferences(updated);
+        onChange(updated);
     };
 
     const genres = ["Techno", "House", "Jazz", "Rock", "Hip Hop", "Eletronic", "Theatre", "Art", "Cinema", "Dance", "Comedy", "Classical"];
@@ -26,7 +39,7 @@ const PreferencesBadge: React.FC = () => {
                     <div key={index} className="flex flex-row items-center px-3 py-0 border-3 border-[#fff3b0] text-[#483d30] bg-[#fff3b0]">
                         <span className="text-[#1a0f10]">{pref}</span>
                         <button
-                            onClick={() => setPreferences(preferences.filter((_, i) => i !== index))}
+                            onClick={() => removePreference(index)}
                             className="text-[#1a0f10] hover:text-[#540b0e] ml-2 transition-colors duration-300 cursor-pointer font-bold">
                             ×
                         </button>
@@ -39,12 +52,12 @@ const PreferencesBadge: React.FC = () => {
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+                    onKeyDown={(e) => e.key === "Enter" && addPreference(input)}
                     placeholder="Other preferences..."
                     className="flex-1 px-3 py-2 bg-[#0a0505] border-3 border-[#483d30] text-[#fff3b0] placeholder-[#91805D] transition-colors duration-300 focus:outline-none focus:border-[#a89a60]"/>
                 <button
-                    onClick={handleAdd}
-                    disabled={input.trim() === "" || preferences.length >= 10}
+                    onClick={() => addPreference(input)}
+                    disabled={ input.trim() === "" || preferences.includes(input.trim()) || preferences.length >= 10}
                     className="w-10 h-10 self-center border-3 border-[#483d30] text-[#fff3b0] flex items-center justify-center transition-colors duration-300 disabled:opacity-30 disabled:cursor-not-allowed hover:border-[#a89a60] hover:text-[#a89a60] cursor-pointer">
                     +
                 </button>
@@ -57,7 +70,7 @@ const PreferencesBadge: React.FC = () => {
                         key={genre}
                         onClick={() => {
                             if (preferences.includes(genre) || preferences.length >= 10) return;
-                            setPreferences([...preferences, genre]);
+                            addPreference(genre);
                         }}
                         disabled={preferences.includes(genre) || preferences.length >= 10}
                         className="px-3 py-1 border-3 border-[#483d30] text-[#91805D] bg-[#0a0505] hover:border-[#a89a60] hover:text-[#fff3b0] transition-colors duration-300 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed">

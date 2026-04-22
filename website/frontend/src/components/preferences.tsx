@@ -1,14 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import profile_icon from "../icons/profile.png";
 import location_icon from "../icons/map.png";
 
 type AccountTypeBadgeProps = {
     accountType: string;
+    onChange: (data: { bio: string, location: string }) => void;
 };
 
-const Preferences: React.FC<AccountTypeBadgeProps> = ({ accountType }) => {
+const Preferences: React.FC<AccountTypeBadgeProps> = ({ accountType, onChange }) => {
     const navigate = useNavigate();
+    const [bio, setBio] = useState("");
+    const [location, setLocation] = useState("");
 
     return (
        <div className="flex flex-col items-center w-full">
@@ -38,6 +41,8 @@ const Preferences: React.FC<AccountTypeBadgeProps> = ({ accountType }) => {
                     <p className="text-[#fff3b0]">Tell us about yourself</p>
                 </div>
                 <textarea
+                    value={bio}
+                    onChange={(e) => { setBio(e.target.value); onChange({ bio: e.target.value, location}); }}
                     placeholder="Your story, interests, or what you do..."
                     className="w-full mt-4 mb-2 p-3 bg-[#0a0505] border-3 border-[#483d30] text-[#fff3b0] placeholder-[#91805D] transition-colors duration-300 resize-none h-30 focus:outline-none focus:border-[#a89a60]"/>
             </div>
@@ -49,6 +54,8 @@ const Preferences: React.FC<AccountTypeBadgeProps> = ({ accountType }) => {
                 </div>
                 <p className="text-[#fff3b0]">Where you are based</p>
                 <input
+                    value={location}
+                    onChange={(e) => { setLocation(e.target.value); onChange({ bio, location: e.target.value }); }}
                     type="text"
                     placeholder="e.g., Lisboa, Porto, Coimbra, ..."
                     className="w-full mt-4 mb-2 px-3 py-2 bg-[#0a0505] border-3 border-[#483d30] text-[#fff3b0] placeholder-[#91805D] transition-colors duration-300 focus:outline-none focus:border-[#a89a60]"/>

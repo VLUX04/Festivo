@@ -1,8 +1,11 @@
-import React, { useState } from "react";
+import React from "react";
 import preferences_icon from "../icons/price.png"
 
-const StyleBadge: React.FC = () => {
-    const [selected, setSelected] = useState<string>("");
+type StyleBadgeProps = {
+    onSelect: (genre: string) => void;
+};
+
+const StyleBadge: React.FC<StyleBadgeProps> = ({ onSelect }) => {
     const genres = ["Techno", "House", "Jazz", "Rock", "Hip Hop", "Eletronic", "Theatre", "Art", "Cinema", "Dance", "Comedy", "Classical"];
 
     return (
@@ -14,8 +17,8 @@ const StyleBadge: React.FC = () => {
             <p className="text-[#fff3b0]">Your primary artistic style or genre.</p>
 
             <select
-                value={selected}
-                onChange={(e) => setSelected(e.target.value)}
+                defaultValue=""
+                onChange={(e) => onSelect(e.target.value)}
                 className="w-full mt-4 mb-2 px-3 py-2 bg-[#0a0505] border-3 border-[#483d30] text-[#fff3b0] transition-colors duration-300 focus:outline-none focus:border-[#a89a60] cursor-pointer">
                 <option value="" disabled>Select a genre...</option>
                 {genres.map((genre) => (
