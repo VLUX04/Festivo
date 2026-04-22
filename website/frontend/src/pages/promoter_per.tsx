@@ -1,7 +1,7 @@
 import React from "react";
 import PageLayout from "../components/pageLayout";
 import CompleteProfile from "../components/completeProfile";
-import AccountTypeBadge from "../components/accountType";
+import Preferences from "../components/preferences";
 
 const PromoterCustomizationPage: React.FC = () => {
     return (
@@ -10,7 +10,7 @@ const PromoterCustomizationPage: React.FC = () => {
                     title="COMPLETE YOUR PROFILE"
                     subtitle="Tell us a bit about yourself to personalize your Festivo experience."
                 />
-                <AccountTypeBadge accountType="Promoter"/>
+                <Preferences accountType="Promoter"/>
         </PageLayout>
     );
 };

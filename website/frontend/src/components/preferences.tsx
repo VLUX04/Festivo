@@ -6,7 +6,7 @@ type AccountTypeBadgeProps = {
     accountType: string;
 };
 
-const AccountTypeBadge: React.FC<AccountTypeBadgeProps> = ({ accountType }) => {
+const Preferences: React.FC<AccountTypeBadgeProps> = ({ accountType }) => {
     const navigate = useNavigate();
 
     return (
@@ -32,4 +32,4 @@ const AccountTypeBadge: React.FC<AccountTypeBadgeProps> = ({ accountType }) => {
     );
 };
 
-export default AccountTypeBadge;
+export default Preferences;
