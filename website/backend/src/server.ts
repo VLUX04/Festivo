@@ -3,20 +3,31 @@ import jwt from 'jsonwebtoken';
 import bcryptjs from 'bcryptjs';
 import cors from 'cors';
 import dotenv from 'dotenv';
-
-dotenv.config();
+import bodyParser from 'body-parser';
 
 import pool from './db.js';
+import { isValidEmail } from './utils.js';
 
 // secret key for signing JWTs
 const SECRET_KEY = 'my_secret_key'; //WARNING: this should probably not be here in prod, also same for all users???
 
 const app = express();
-const PORT = 3000;
+app.use(bodyParser.json());
+app.use(
+  bodyParser.urlencoded({
+    extended: true,
+  }),
+);
+dotenv.config();
+const PORT = process.env.PORT || 3000;
 
-app.use(cors({origin: 'http://127.0.0.1:5173'}));
-app.use(express.json());
-app.use(express.urlencoded({extended: true}));
+if (process.env.PROD) {
+	app.use(cors({origin: 'http://localhost:5173', credentials: true}));
+	console.log("Prod/container cors enabled.");
+} else {
+	app.use(cors({origin: 'http://localhost:5173', credentials: true})); //WARNING: 0.0.0.0 != localhost - ISMA
+	console.log("Dev cors enabled.");
+}
 
 //
 // GETS
@@ -30,20 +41,29 @@ app.get('/', (req, res) => {
 //
 app.post('/register', async (req, res) => {
 	try {
-		const {username, email, password, role} = req.body; // all non-nullable attributes in db
+		console.log(req.body);
+		const {username, name, email, password} = req.body; // all non-nullable attributes in db, except role
+		const role = "customer";
 
-        const existing = await pool.query('SELECT 1 FROM users WHERE username = $1', [username]);
-		if (existing.rows.length > 0) return res.status(400).json({success: false, message: 'User already exists'});
+		// check if the account already exists
+        const existing = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+		if (existing.rows.length > 0) return res.status(400).json({success: false, message: 'An account under the provided email already exists'});
+
+		// then check for conflicting usernames
+		const username_conflict = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+		if (username_conflict.rows.length > 0)
+			return res.status(409).json({success: false, message: 'Username not available.'})
 
 		const salt = await bcryptjs.genSalt(10);
-		const hashedPass = await bcryptjs.hash(password, 10);
+		const hashedPass = await bcryptjs.hash(password, salt);
 
         await pool.query(
-            'INSERT INTO users (username, email, pass, role) VALUES ($1, $2, $3, $4)',
-            [username, email, hashedPass, role]
+            'INSERT INTO users (username, name, email, pass, role) VALUES ($1, $2, $3, $4, $5)',
+            [username, name, email, hashedPass, role]
         );
 
 		res.status(201).json({success: true, message: 'New user created!'});
+		console.log("Registration successful");
 	} catch(err) {
 		console.error(err);
 		res.status(500).json({success: false, message: 'Internal server error'});
@@ -52,16 +72,37 @@ app.post('/register', async (req, res) => {
 
 app.post('/login', async(req, res) => {
 	try {
-		const {username, password} = req.body;
+		const {credential, password} = req.body;
 
-        const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
-        const user = result.rows[0]; 
-		if (!user) return res.status(404).json({success: false, message: 'User not found'});
+		let db_user;
+		if (isValidEmail(credential)) {
+			// authenticate based on email
+			const result = await pool.query('SELECT username, pass FROM users WHERE email = $1', [credential]);
+			const user = result.rows[0];
+			if (!user) return res.status(404).json({success: false, message: 'User with the provided email not found'});
 
-		const isPassValid = await bcryptjs.compare(password, user.pass);
+			db_user = user;
+		} else {
+			// authenticate based on username
+			const result = await pool.query('SELECT username, pass FROM users WHERE username = $1', [credential]);
+			const user = result.rows[0];
+			if (!user) return res.status(404).json({success: false, message: 'User with the provided username not found'});
+
+			db_user = user;
+		}
+		
+		const db_password: string = db_user.pass;
+		let isPassValid;
+		if (db_password !== undefined) {
+			isPassValid = await bcryptjs.compare(password, db_password);
+		} else {
+			isPassValid = false;
+		}
 		if (!isPassValid) {
 			return res.status(401).json({success: false, message: 'Invalid password'});
 		}
+
+		const username: string = db_user.username;
 
 		// JWT
 		const payload = { username };
@@ -91,4 +132,4 @@ const loginMiddleware = async (req: any, res: any, next: any) => {
 	});
 };
 
-app.listen(PORT, () => console.log('running'));
+app.listen(PORT, () => console.log('running broder ' + process.env.DB_HOST));
