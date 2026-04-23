@@ -25,6 +25,7 @@ services:
       DB_USER: myuser
       DB_PASSWORD: secret
       DB_NAME: mydb
+      PROD: true
     depends_on:
       - db
 
@@ -35,6 +36,7 @@ services:
       - "5173:5173"
     depends_on:
       - backend
+    command: npm run dev -- --host
 
 volumes:
   postgres_data:

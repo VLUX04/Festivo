@@ -21,7 +21,13 @@ app.use(
 dotenv.config();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors({origin: 'http://localhost:5173', credentials: true}));
+if (process.env.PROD) {
+	app.use(cors({origin: 'http://frontend:5173', credentials: true}));
+	console.log("Prod/container cors enabled.");
+} else {
+	app.use(cors({origin: 'http://localhost:5173', credentials: true})); //WARNING: 0.0.0.0 != localhost - ISMA
+	console.log("Dev cors enabled.");
+}
 
 //
 // GETS
