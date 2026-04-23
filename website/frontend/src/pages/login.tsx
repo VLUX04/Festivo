@@ -42,6 +42,7 @@ const LoginPage: React.FC = () => {
 		  if (data.success) {
 			  setSubmitted(true);
 			  alert("Login successful!");
+			  localStorage.setItem('token', data.token);
 			  handleReset();
 		  } else {
 			  alert(data.message || "Login failed.")

@@ -46,11 +46,11 @@ app.post('/register', async (req, res) => {
 		const role = "customer";
 
 		// check if the account already exists
-        const existing = await pool.query('SELECT 1 FROM users WHERE email = $1', [email]);
+        const existing = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
 		if (existing.rows.length > 0) return res.status(400).json({success: false, message: 'An account under the provided email already exists'});
 
 		// then check for conflicting usernames
-		const username_conflict = await pool.query('SELECT 1 FROM users WHERE username = $1', [username]);
+		const username_conflict = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
 		if (username_conflict.rows.length > 0)
 			return res.status(409).json({success: false, message: 'Username not available.'})
 
@@ -77,25 +77,32 @@ app.post('/login', async(req, res) => {
 		let db_user;
 		if (isValidEmail(credential)) {
 			// authenticate based on email
-			const result = await pool.query('SELECT 1 FROM users WHERE email = $1', [credential]);
+			const result = await pool.query('SELECT username, pass FROM users WHERE email = $1', [credential]);
 			const user = result.rows[0];
 			if (!user) return res.status(404).json({success: false, message: 'User with the provided email not found'});
 
 			db_user = user;
 		} else {
 			// authenticate based on username
-			const result = await pool.query('SELECT 1 FROM users WHERE username = $1', [credential]);
+			const result = await pool.query('SELECT username, pass FROM users WHERE username = $1', [credential]);
 			const user = result.rows[0];
 			if (!user) return res.status(404).json({success: false, message: 'User with the provided username not found'});
 
 			db_user = user;
 		}
-		const isPassValid = await bcryptjs.compare(password, db_user.pass);
+		
+		const db_password: string = db_user.pass;
+		let isPassValid;
+		if (db_password !== undefined) {
+			isPassValid = await bcryptjs.compare(password, db_password);
+		} else {
+			isPassValid = false;
+		}
 		if (!isPassValid) {
 			return res.status(401).json({success: false, message: 'Invalid password'});
 		}
 
-		const username = db_user.username;
+		const username: string = db_user.username;
 
 		// JWT
 		const payload = { username };
