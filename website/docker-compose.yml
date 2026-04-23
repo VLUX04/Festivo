@@ -14,6 +14,12 @@ services:
       - ./database/seed.sql:/docker-entrypoint-initdb.d/02_seed.sql
       - ./database/populate.sql:/docker-entrypoint-initdb.d/03_populate.sql
       - ./database/populate.sql:/docker-entrypoint-initdb.d/04_triggers.sql
+    healthcheck:
+      test: [ "CMD-SHELL", 'pg_isready -U "$${POSTGRES_USER:-myuser}" -d "$${POSTGRES_DB:-mydb}"' ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
   backend:
     build: ./backend
     restart: always
@@ -25,10 +31,12 @@ services:
       DB_USER: myuser
       DB_PASSWORD: secret
       DB_NAME: mydb
+      PROD: true
     depends_on:
       - db
 
   frontend:
+    hostname: frontend
     build: ./frontend
     restart: always
     ports:
