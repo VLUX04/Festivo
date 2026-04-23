@@ -13,6 +13,7 @@ export interface Event {
     type: string,
     date: string,
     title: string,
+    promoter: string,
     description: string,
     location: string,
     time: string,
@@ -47,6 +48,7 @@ const EventContainer: React.FC<{ event: Event }> = ({ event }) => (
                 </div>
             </div>
             <h1 className='text-[#fff3b0] px-6 text-2xl'>{event.title}</h1>
+            <p className='px-6 text-base text-[#fff3b0]'>{event.promoter}</p>
             <p className='text-[#a89060] px-6'>{event.description}</p>
             <div className='flex items-center'>
                 <img src={mapIcon} alt="" className='ml-6 mr-2 h-5 w-5 object-contain group-active:mix-blend-color' aria-hidden='true' />

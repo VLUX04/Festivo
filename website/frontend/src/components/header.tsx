@@ -8,6 +8,7 @@ import workIcon from '../icons/work.png';
 import mapIcon from '../icons/map.png';
 import profileIcon from '../icons/profile.png';
 import loginIcon from '../icons/login.png';
+import { AUTH_CHANGED_EVENT, isAuthenticated } from '../utils/auth';
 
 const navItems = [
     { label: 'Events', icon: eventsIcon },
@@ -21,7 +22,20 @@ const navButtonClass = 'group transition duration-333 ease-in-out border-2 borde
 
 const Header: React.FC = () => {
     const [menuOpen, setMenuOpen] = React.useState(false);
-    const [isLogged] = React.useState(true);
+    const [isLogged, setIsLogged] = React.useState<boolean>(isAuthenticated());
+
+    React.useEffect(() => {
+        const updateAuth = () => setIsLogged(isAuthenticated());
+
+        window.addEventListener(AUTH_CHANGED_EVENT, updateAuth);
+        window.addEventListener('storage', updateAuth);
+
+        return () => {
+            window.removeEventListener(AUTH_CHANGED_EVENT, updateAuth);
+            window.removeEventListener('storage', updateAuth);
+        };
+    }, []);
+
     return (
     <header className='bg-[#1a0f10] flex h-22 border-b-3 border-[#fff3b0] justify-center'>
         <div className='flex w-[80%] justify-self-center'>

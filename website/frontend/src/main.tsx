@@ -22,7 +22,7 @@ ReactDOM.createRoot(document.getElementById('app')!).render(
   <React.StrictMode>
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<AboutPage />} />
+        <Route path="/" element={<EventsPage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/login" element={<LoginPage />} />
