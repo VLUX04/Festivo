@@ -14,6 +14,12 @@ services:
       - ./database/seed.sql:/docker-entrypoint-initdb.d/02_seed.sql
       - ./database/populate.sql:/docker-entrypoint-initdb.d/03_populate.sql
       - ./database/populate.sql:/docker-entrypoint-initdb.d/04_triggers.sql
+    healthcheck:
+      test: [ "CMD-SHELL", 'pg_isready -U "$${POSTGRES_USER:-myuser}" -d "$${POSTGRES_DB:-mydb}"' ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
   backend:
     build: ./backend
     restart: always
@@ -30,13 +36,13 @@ services:
       - db
 
   frontend:
+    hostname: frontend
     build: ./frontend
     restart: always
     ports:
       - "5173:5173"
     depends_on:
       - backend
-    command: npm run dev -- --host
 
 volumes:
   postgres_data:
