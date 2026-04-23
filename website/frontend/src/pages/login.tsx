@@ -1,15 +1,16 @@
 import React from 'react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import loginIcon from '../icons/login.png';
 import PageLayout from '../components/pageLayout'
+import { loginWithCredentialFallback } from '../utils/auth';
 
 const LoginPage: React.FC = () => {
+	const navigate = useNavigate();
   const [formData, setFormData] = useState({
 	  credential: '',
 	  password: ''
   });
-
-  const [submitted, setSubmitted] = useState(false);
 
   const handleChange = (e: any) => {
 	  const { name, value } = e.target;
@@ -40,10 +41,10 @@ const LoginPage: React.FC = () => {
 		  const data = await response.json();
 
 		  if (data.success) {
-			  setSubmitted(true);
 			  alert("Login successful!");
-			  localStorage.setItem('token', data.token);
+			  loginWithCredentialFallback(data.token, formData.credential);
 			  handleReset();
+			  navigate('/profile');
 		  } else {
 			  alert(data.message || "Login failed.")
 		  }
