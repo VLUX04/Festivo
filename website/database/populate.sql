@@ -11,17 +11,17 @@ TRUNCATE TABLE
 RESTART IDENTITY CASCADE;
 
 -- USERS
-INSERT INTO users (id, username, email, pass, role) VALUES
-(1, 'jazzmaster', 'jazz@example.com', 'hashedpass', 'professional'),
-(2, 'artcurator', 'art@example.com', 'hashedpass', 'professional'),
-(3, 'orchestral', 'orchestra@example.com', 'hashedpass', 'professional'),
-(4, 'photopro', 'photo@example.com', 'hashedpass', 'professional'),
-(5, 'festivalpro', 'festival@example.com', 'hashedpass', 'professional'),
-(6, 'bizpro', 'biz@example.com', 'hashedpass', 'professional'),
-(7, 'artworkshop', 'workshop@example.com', 'hashedpass', 'professional'),
-(8, 'startuppro', 'startup@example.com', 'hashedpass', 'professional'),
-(9, 'concertpro', 'concert@example.com', 'hashedpass', 'professional'),
-(10, 'esportspro', 'esports@example.com', 'hashedpass', 'professional')
+INSERT INTO users (id, username, name, email, pass, role) VALUES
+(1, 'jazzmaster', 'Jazz Master', 'jazz@example.com', 'hashedpass', 'professional'),
+(2, 'artcurator', 'Art Curator', 'art@example.com', 'hashedpass', 'professional'),
+(3, 'orchestral', 'Orchestral Pro', 'orchestra@example.com', 'hashedpass', 'professional'),
+(4, 'photopro', 'Photo Pro', 'photo@example.com', 'hashedpass', 'professional'),
+(5, 'festivalpro', 'Festival Pro', 'festival@example.com', 'hashedpass', 'professional'),
+(6, 'bizpro', 'Biz Pro', 'biz@example.com', 'hashedpass', 'professional'),
+(7, 'artworkshop', 'Art Workshop', 'workshop@example.com', 'hashedpass', 'professional'),
+(8, 'startuppro', 'Startup Pro', 'startup@example.com', 'hashedpass', 'professional'),
+(9, 'concertpro', 'Concert Pro', 'concert@example.com', 'hashedpass', 'professional'),
+(10, 'esportspro', 'Esports Pro', 'esports@example.com', 'hashedpass', 'professional')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO professional_profile (user_id) VALUES
