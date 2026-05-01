@@ -54,9 +54,9 @@ export const setAuthSession = (token: string, partialUser?: Partial<AuthUser>): 
 
   const currentUser: AuthUser = {
     username: partialUser?.username || payloadUsername || 'user',
-    name: partialUser?.name,
-    email: partialUser?.email,
-    role: partialUser?.role,
+    name: partialUser?.name || (typeof payload?.name === 'string' ? payload.name : undefined),
+    email: partialUser?.email || (typeof payload?.email === 'string' ? payload.email : undefined),
+    role: partialUser?.role || (typeof payload?.role === 'string' ? payload.role : undefined),
   };
 
   localStorage.setItem(AUTH_TOKEN_KEY, token);
