@@ -4,16 +4,26 @@ import CompleteProfile from "../components/completeProfile";
 import Preferences from "../components/preferences";
 import StyleBadge from "../components/styleBadge";
 import CompleteSetup from "../components/completeSetup";
+import { useRegistration } from "../context/RegistrationContext";
 
 const ArtistCustomizationPage: React.FC = () => {
-    const [, setGenre] = useState<string>("");
-    const [, setProfileData] = useState({ bio: "", location: "" });
+    const { saveRegistration } = useRegistration();
     return (
         <PageLayout>
-                <CompleteProfile/>
-                <Preferences accountType="Artist" onChange={setProfileData}/>
-                <StyleBadge onSelect={setGenre}/>
-                <CompleteSetup/>
+            <CompleteProfile />
+            <Preferences
+                accountType="Artist"
+                onChange={(profileData) =>
+                    saveRegistration({
+                        bio: profileData.bio,
+                        location: profileData.location,
+                    })
+                }
+            />
+            <StyleBadge
+                onSelect={(genre) => saveRegistration({ preferences: [genre] })}
+            />
+            <CompleteSetup />
         </PageLayout>
     );
 };

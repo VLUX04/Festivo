@@ -3,11 +3,13 @@ import PageLayout from "../components/pageLayout";
 import CompleteProfile from "../components/completeProfile";
 import { useNavigate } from "react-router-dom";
 import customer_icon from "../icons/profile.png";
+import { useRegistration } from "../context/RegistrationContext";
 
 const AccountCustomizationPage: React.FC = () => {
     const navigate = useNavigate();
+    const { saveRegistration } = useRegistration();
     const handleSelect = (type: string) => {
-        // save the account later
+        saveRegistration({ accountType: type });
         navigate("/" + type + "_per");
     };
 

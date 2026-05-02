@@ -4,15 +4,23 @@ import CompleteProfile from "../components/completeProfile";
 import Preferences from "../components/preferences";
 import PreferencesBadge from "../components/preferencesBadge";
 import CompleteSetup from "../components/completeSetup";
+import { useRegistration } from "../context/RegistrationContext";
 
 const CustomerCustomizationPage: React.FC = () => {
-    const [, setPreferences] = useState<string[]>([]);
-    const [, setProfileData] = useState({ bio: "", location: "" });
+    const { saveRegistration } = useRegistration();
     return (
         <PageLayout>
             <CompleteProfile/>
-            <Preferences accountType="Event Lover" onChange={setProfileData}/>
-            <PreferencesBadge onChange={setPreferences}/>
+            <Preferences 
+                accountType="Event Lover" 
+                onChange={(profileData) => saveRegistration({
+                    bio: profileData.bio,
+                    location: profileData.location
+                })}
+            />
+            <PreferencesBadge 
+                onChange={(prefs) => saveRegistration({ preferences: prefs })}
+            />
             <CompleteSetup/>
         </PageLayout>
     );

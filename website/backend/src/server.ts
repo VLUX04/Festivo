@@ -54,16 +54,17 @@ app.post('/register', async (req, res) => {
 		if (username_conflict.rows.length > 0)
 			return res.status(409).json({success: false, message: 'Username not available.'})
 
-		const salt = await bcryptjs.genSalt(10);
-		const hashedPass = await bcryptjs.hash(password, salt);
-
-        await pool.query(
-            'INSERT INTO users (username, name, email, pass, role) VALUES ($1, $2, $3, $4, $5)',
-            [username, name, email, hashedPass, role]
-        );
-
-		res.status(201).json({success: true, message: 'New user created!'});
-		console.log("Registration successful");
+        res.status(200).json({ success: true, message: 'Validation passed.' });
+		// const salt = await bcryptjs.genSalt(10);
+		// const hashedPass = await bcryptjs.hash(password, salt);
+		//
+		//       await pool.query(
+		//           'INSERT INTO users (username, name, email, pass, role) VALUES ($1, $2, $3, $4, $5)',
+		//           [username, name, email, hashedPass, role]
+		//       );
+		//
+		// res.status(201).json({success: true, message: 'New user created!'});
+		// console.log("Registration successful");
 	} catch(err) {
 		console.error(err);
 		res.status(500).json({success: false, message: 'Internal server error'});
