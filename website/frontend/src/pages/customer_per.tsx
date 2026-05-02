@@ -1,4 +1,3 @@
-import React, { useState } from "react";
 import PageLayout from "../components/pageLayout";
 import CompleteProfile from "../components/completeProfile";
 import Preferences from "../components/preferences";
