@@ -22,10 +22,10 @@ dotenv.config();
 const PORT = process.env.PORT || 3000;
 
 if (process.env.PROD) {
-	app.use(cors({origin: 'http://localhost:5173', credentials: true}));
+	app.use(cors({origin: ['http://localhost:5173', 'http://127.0.0.1:5173'], credentials: true}));
 	console.log("Prod/container cors enabled.");
 } else {
-	app.use(cors({origin: 'http://localhost:5173', credentials: true})); //WARNING: 0.0.0.0 != localhost - ISMA
+	app.use(cors({origin: ['http://localhost:5173', 'http://127.0.0.1:5173'], credentials: true})); //WARNING: 0.0.0.0 != localhost - ISMA
 	console.log("Dev cors enabled.");
 }
 
@@ -55,20 +55,71 @@ app.post('/register', async (req, res) => {
 			return res.status(409).json({success: false, message: 'Username not available.'})
 
         res.status(200).json({ success: true, message: 'Validation passed.' });
-		// const salt = await bcryptjs.genSalt(10);
-		// const hashedPass = await bcryptjs.hash(password, salt);
-		//
-		//       await pool.query(
-		//           'INSERT INTO users (username, name, email, pass, role) VALUES ($1, $2, $3, $4, $5)',
-		//           [username, name, email, hashedPass, role]
-		//       );
-		//
-		// res.status(201).json({success: true, message: 'New user created!'});
-		// console.log("Registration successful");
 	} catch(err) {
 		console.error(err);
 		res.status(500).json({success: false, message: 'Internal server error'});
 	}
+});
+
+app.post('/register/complete', async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const { username, name, email, password, accountType, bio, location, preferences } = req.body;
+
+        const salt = await bcryptjs.genSalt(10);
+        const hashedPass = await bcryptjs.hash(password, salt);
+
+        const role = accountType === 'customer' ? 'customer' : 'professional';
+
+        await client.query('BEGIN');
+
+        // insert into users
+        const result = await client.query(
+            'INSERT INTO users (username, name, email, pass, role, information, location) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+            [username, name, email, hashedPass, role, bio, location]
+        );
+        const userId = result.rows[0].id;
+
+        if (accountType === 'customer') {
+            // insert into customer table
+            await client.query(
+                'INSERT INTO customer (customer_id) VALUES ($1)',
+                [userId]
+            );
+
+            // insert preferences
+            if (preferences && preferences.length > 0) {
+                for (const pref of preferences) {
+                    // insert tag if it doesn't exist yet
+                    await client.query(
+                        'INSERT INTO tags (tag_name) VALUES ($1) ON CONFLICT DO NOTHING',
+                        [pref]
+                    );
+                    await client.query(
+                        'INSERT INTO customer_preferences (customer_id, tag_name) VALUES ($1, $2)',
+                        [userId, pref]
+                    );
+                }
+            }
+
+        } else {
+            // artist or promoter -> professional_profile
+            await client.query(
+                'INSERT INTO professional_profile (user_id, is_verified) VALUES ($1, $2)',
+                [userId, false]
+            );
+        }
+
+        await client.query('COMMIT');
+        res.status(201).json({ success: true, message: 'User created!' });
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    } finally {
+        client.release();
+    }
 });
 
 app.post('/login', async(req, res) => {

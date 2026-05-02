@@ -4,9 +4,34 @@ import Preferences from "../components/preferences";
 import StyleBadge from "../components/styleBadge";
 import CompleteSetup from "../components/completeSetup";
 import { useRegistration } from "../context/RegistrationContext";
+import { useNavigate } from "react-router-dom";
 
 const ArtistCustomizationPage: React.FC = () => {
     const { saveRegistration } = useRegistration();
+    const { data } = useRegistration();
+    const navigate = useNavigate();
+
+    const handleSubmit = async () => {
+        try {
+            const response = await fetch("http://localhost:3000/register/complete", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                navigate("/login"); 
+            } else {
+                alert(result.message || "Setup failed.");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Something went wrong. Please try again.");
+        }
+    };
+
     return (
         <PageLayout>
             <CompleteProfile />
@@ -22,7 +47,7 @@ const ArtistCustomizationPage: React.FC = () => {
             <StyleBadge
                 onSelect={(genre) => saveRegistration({ preferences: [genre] })}
             />
-            <CompleteSetup />
+            <CompleteSetup onClick={handleSubmit}/>
         </PageLayout>
     );
 };
