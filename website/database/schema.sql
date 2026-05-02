@@ -8,7 +8,7 @@ CREATE TABLE users (
     pass VARCHAR(255) NOT NULL,
     information TEXT,
     role user_role NOT NULL,
-    location VARCHAR(255) NOT NULL
+    location VARCHAR(255) 
 );
 
 -- PROFESSIONAL PROFILE
@@ -16,6 +16,7 @@ CREATE TABLE professional_profile (
     user_id INT PRIMARY KEY,
     rating INT,
     is_verified BOOLEAN,
+    genre VARCHAR(100),
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 

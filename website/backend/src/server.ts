@@ -22,10 +22,10 @@ dotenv.config();
 const PORT = process.env.PORT || 3000;
 
 if (process.env.PROD) {
-	app.use(cors({origin: ['http://localhost:5173', 'http://127.0.0.1:5173'], credentials: true}));
+	app.use(cors({origin: 'http://localhost:5173', credentials: true}));
 	console.log("Prod/container cors enabled.");
 } else {
-	app.use(cors({origin: ['http://localhost:5173', 'http://127.0.0.1:5173'], credentials: true})); //WARNING: 0.0.0.0 != localhost - ISMA
+	app.use(cors({origin: 'http://localhost:5173', credentials: true})); //WARNING: 0.0.0.0 != localhost - ISMA
 	console.log("Dev cors enabled.");
 }
 
@@ -75,7 +75,7 @@ app.post('/register/complete', async (req, res) => {
 
         // insert into users
         const result = await client.query(
-            'INSERT INTO users (username, name, email, pass, role, information, location) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+            'INSERT INTO users (username, name, email, pass, role, information, location) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
             [username, name, email, hashedPass, role, bio, location]
         );
         const userId = result.rows[0].id;
@@ -105,8 +105,8 @@ app.post('/register/complete', async (req, res) => {
         } else {
             // artist or promoter -> professional_profile
             await client.query(
-                'INSERT INTO professional_profile (user_id, is_verified) VALUES ($1, $2)',
-                [userId, false]
+                'INSERT INTO professional_profile (user_id, is_verified, genre) VALUES ($1, $2, $3)',
+                [userId, false, accountType == 'artist' ? preferences[0] : null]
             );
         }
 
