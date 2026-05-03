@@ -129,14 +129,14 @@ app.post('/login', async(req, res) => {
 		let db_user;
 		if (isValidEmail(credential)) {
 			// authenticate based on email
-			const result = await pool.query('SELECT username, pass FROM users WHERE email = $1', [credential]);
+			const result = await pool.query('SELECT username, name, email, role, pass FROM users WHERE email = $1', [credential]);
 			const user = result.rows[0];
 			if (!user) return res.status(404).json({success: false, message: 'User with the provided email not found'});
 
 			db_user = user;
 		} else {
 			// authenticate based on username
-			const result = await pool.query('SELECT username, pass FROM users WHERE username = $1', [credential]);
+			const result = await pool.query('SELECT username, name, email, role, pass FROM users WHERE username = $1', [credential]);
 			const user = result.rows[0];
 			if (!user) return res.status(404).json({success: false, message: 'User with the provided username not found'});
 
@@ -154,13 +154,17 @@ app.post('/login', async(req, res) => {
 			return res.status(401).json({success: false, message: 'Invalid password'});
 		}
 
-		const username: string = db_user.username;
-
+        const { pass, ...userWithoutPassword } = db_user;
 		// JWT
-		const payload = { username };
+        const payload = { ...userWithoutPassword };
 		const token = jwt.sign(payload, SECRET_KEY, {expiresIn: '24h'});
 
-		res.status(200).json({token, success: true, message: 'Logged in successfully'});
+		res.status(200).json({
+            token, 
+            success: true, 
+            message: 'Logged in successfully',
+            user: userWithoutPassword // send data to frontend
+        });
 	} catch (err) {
 		console.error(err);
 		res.status(500).json({success: false, message: 'Internal server error'});

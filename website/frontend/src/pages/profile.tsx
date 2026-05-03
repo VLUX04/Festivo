@@ -22,7 +22,7 @@ const ProfilePage: React.FC = () => {
     }
 
     const displayName = user?.name || user?.username || 'Festivo User';
-    const displayRole = user?.role || 'Event Lover';
+    const displayRole = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Event Lover';
     const displayEmail = user?.email || 'Email not set';
 
     return(
