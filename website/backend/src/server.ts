@@ -164,7 +164,7 @@ app.post('/login', async(req, res) => {
             success: true, 
             message: 'Logged in successfully',
             user: userWithoutPassword // send data to frontend
-        });
+        }); // change the queries here and the auth reception on the frontend if you need to send more info on the user
 	} catch (err) {
 		console.error(err);
 		res.status(500).json({success: false, message: 'Internal server error'});

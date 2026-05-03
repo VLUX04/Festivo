@@ -36,7 +36,7 @@ const PromoterCustomizationPage: React.FC = () => {
         <PageLayout>
             <CompleteProfile />
             <Preferences
-                accountType="Event Lover"
+                accountType="Promoter"
                 onChange={(profileData) =>
                     saveRegistration({
                         bio: profileData.bio,
