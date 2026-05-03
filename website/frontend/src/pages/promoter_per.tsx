@@ -7,9 +7,9 @@ import { useNavigate } from "react-router-dom";
 
 const PromoterCustomizationPage: React.FC = () => {
     const { saveRegistration } = useRegistration();
-
     const { data } = useRegistration();
     const navigate = useNavigate();
+    const isComplete = data.bio.trim() !== "" && data.location.trim() !== "";
 
     const handleSubmit = async () => {
         try {
@@ -44,7 +44,7 @@ const PromoterCustomizationPage: React.FC = () => {
                     })
                 }
             />
-            <CompleteSetup onClick={handleSubmit}/>
+            <CompleteSetup onClick={handleSubmit} disabled={!isComplete}/>
         </PageLayout>
     );
 };

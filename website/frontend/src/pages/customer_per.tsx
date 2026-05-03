@@ -8,9 +8,9 @@ import { useNavigate } from "react-router-dom";
 
 const CustomerCustomizationPage: React.FC = () => {
     const { saveRegistration } = useRegistration();
-
     const { data } = useRegistration();
     const navigate = useNavigate();
+    const isComplete = data.bio.trim() !== "" && data.location.trim() !== "" && data.preferences.length > 0;
 
     const handleSubmit = async () => {
         try {
@@ -48,7 +48,7 @@ const CustomerCustomizationPage: React.FC = () => {
             <PreferencesBadge
                 onChange={(prefs) => saveRegistration({ preferences: prefs })}
             />
-            <CompleteSetup onClick={handleSubmit}/>
+            <CompleteSetup onClick={handleSubmit} disabled={!isComplete}/>
         </PageLayout>
     );
 };

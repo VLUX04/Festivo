@@ -10,6 +10,7 @@ const ArtistCustomizationPage: React.FC = () => {
     const { saveRegistration } = useRegistration();
     const { data } = useRegistration();
     const navigate = useNavigate();
+    const isComplete = data.bio.trim() !== "" && data.location.trim() !== "" && data.preferences.length > 0;
 
     const handleSubmit = async () => {
         try {
@@ -47,7 +48,7 @@ const ArtistCustomizationPage: React.FC = () => {
             <StyleBadge
                 onSelect={(genre) => saveRegistration({ preferences: [genre] })}
             />
-            <CompleteSetup onClick={handleSubmit}/>
+            <CompleteSetup onClick={handleSubmit} disabled={!isComplete}/>
         </PageLayout>
     );
 };
