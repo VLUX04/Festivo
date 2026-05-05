@@ -54,20 +54,72 @@ app.post('/register', async (req, res) => {
 		if (username_conflict.rows.length > 0)
 			return res.status(409).json({success: false, message: 'Username not available.'})
 
-		const salt = await bcryptjs.genSalt(10);
-		const hashedPass = await bcryptjs.hash(password, salt);
-
-        await pool.query(
-            'INSERT INTO users (username, name, email, pass, role) VALUES ($1, $2, $3, $4, $5)',
-            [username, name, email, hashedPass, role]
-        );
-
-		res.status(201).json({success: true, message: 'New user created!'});
-		console.log("Registration successful");
+        res.status(200).json({ success: true, message: 'Validation passed.' });
 	} catch(err) {
 		console.error(err);
 		res.status(500).json({success: false, message: 'Internal server error'});
 	}
+});
+
+app.post('/register/complete', async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const { username, name, email, password, accountType, bio, location, preferences } = req.body;
+
+        const salt = await bcryptjs.genSalt(10);
+        const hashedPass = await bcryptjs.hash(password, salt);
+
+        const role = accountType === 'customer' ? 'customer' : 'professional';
+
+        await client.query('BEGIN');
+
+        // insert into users
+        const result = await client.query(
+            'INSERT INTO users (username, name, email, pass, role, information, location) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
+            [username, name, email, hashedPass, role, bio, location]
+        );
+        const userId = result.rows[0].id;
+
+        if (accountType === 'customer') {
+            // insert into customer table
+            await client.query(
+                'INSERT INTO customer (customer_id) VALUES ($1)',
+                [userId]
+            );
+
+            // insert preferences
+            if (preferences && preferences.length > 0) {
+                for (const pref of preferences) {
+                    // insert tag if it doesn't exist yet
+                    await client.query(
+                        'INSERT INTO tags (tag_name) VALUES ($1) ON CONFLICT DO NOTHING',
+                        [pref]
+                    );
+                    await client.query(
+                        'INSERT INTO customer_preferences (customer_id, tag_name) VALUES ($1, $2)',
+                        [userId, pref]
+                    );
+                }
+            }
+
+        } else {
+            // artist or promoter -> professional_profile
+            await client.query(
+                'INSERT INTO professional_profile (user_id, is_verified, genre) VALUES ($1, $2, $3)',
+                [userId, false, accountType == 'artist' ? preferences[0] : null]
+            );
+        }
+
+        await client.query('COMMIT');
+        res.status(201).json({ success: true, message: 'User created!' });
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    } finally {
+        client.release();
+    }
 });
 
 app.post('/login', async(req, res) => {
@@ -77,14 +129,14 @@ app.post('/login', async(req, res) => {
 		let db_user;
 		if (isValidEmail(credential)) {
 			// authenticate based on email
-			const result = await pool.query('SELECT username, pass FROM users WHERE email = $1', [credential]);
+			const result = await pool.query('SELECT username, name, email, role, pass FROM users WHERE email = $1', [credential]);
 			const user = result.rows[0];
 			if (!user) return res.status(404).json({success: false, message: 'User with the provided email not found'});
 
 			db_user = user;
 		} else {
 			// authenticate based on username
-			const result = await pool.query('SELECT username, pass FROM users WHERE username = $1', [credential]);
+			const result = await pool.query('SELECT username, name, email, role, pass FROM users WHERE username = $1', [credential]);
 			const user = result.rows[0];
 			if (!user) return res.status(404).json({success: false, message: 'User with the provided username not found'});
 
@@ -102,13 +154,17 @@ app.post('/login', async(req, res) => {
 			return res.status(401).json({success: false, message: 'Invalid password'});
 		}
 
-		const username: string = db_user.username;
-
+        const { pass, ...userWithoutPassword } = db_user;
 		// JWT
-		const payload = { username };
+        const payload = { ...userWithoutPassword };
 		const token = jwt.sign(payload, SECRET_KEY, {expiresIn: '24h'});
 
-		res.status(200).json({token, success: true, message: 'Logged in successfully'});
+		res.status(200).json({
+            token, 
+            success: true, 
+            message: 'Logged in successfully',
+            user: userWithoutPassword // send data to frontend
+        }); // change the queries here and the auth reception on the frontend if you need to send more info on the user
 	} catch (err) {
 		console.error(err);
 		res.status(500).json({success: false, message: 'Internal server error'});
