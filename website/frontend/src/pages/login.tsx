@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import loginIcon from '../icons/login.png';
 import PageLayout from '../components/pageLayout'
-import { loginWithCredentialFallback } from '../utils/auth';
+import { setAuthSession } from '../utils/auth';
 
 const LoginPage: React.FC = () => {
 	const navigate = useNavigate();
@@ -42,7 +42,12 @@ const LoginPage: React.FC = () => {
 
 		  if (data.success) {
 			  alert("Login successful!");
-			  loginWithCredentialFallback(data.token, formData.credential);
+              setAuthSession(data.token, {
+                  username: data.user.username,
+                  name: data.user.name,
+                  email: data.user.email,
+                  role: data.user.role
+              });
 			  handleReset();
 			  navigate('/profile');
 		  } else {

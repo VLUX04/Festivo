@@ -2,15 +2,20 @@ import React from 'react';
 import { useState } from 'react';
 import registerLogin from '../icons/register.png';
 import PageLayout from '../components/pageLayout';
+import { useNavigate } from 'react-router-dom';
+import { useRegistration } from '../context/RegistrationContext';
 
 const RegisterPage: React.FC = () => {
+
+  const navigate = useNavigate();
+  const { saveRegistration } = useRegistration();
+
   const [formData, setFormData] = useState({
 	  username: '',
 	  name: '',
 	  email: '',
 	  password: ''
   });
-  const [submitted, setSubmitted] = useState(false);
 
   const handleChange = (e: any) => {
 	  const { name, value } = e.target;
@@ -49,10 +54,14 @@ const RegisterPage: React.FC = () => {
 
 		  const data = await response.json();
 
-		  if (data.success) {
-			  setSubmitted(true);
-			  alert("Registration successful!");
-			  handleReset();
+          if (data.success) {
+              saveRegistration({
+                  username: formData.username,
+                  name: formData.name,
+                  email: formData.email,
+                  password: formData.password,
+              });
+              navigate("/account");
 		  } else {
 			  alert(data.message || 'Registration failed')
 		  }
@@ -60,15 +69,6 @@ const RegisterPage: React.FC = () => {
 		console.error('Error: ', err);
 		alert('Registration failed. Please try again.');
 	  }
-  }
-
-  const handleReset = () => {
-	  setFormData({
-		  username: '',
-		  name: '',
-		  email: '',
-		  password: ''
-	  });
   }
 
   return (
