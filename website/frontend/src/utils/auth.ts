@@ -7,6 +7,9 @@ export type AuthUser = {
   name?: string;
   email?: string;
   role?: string;
+  password?: string;
+  profileImage?: string;
+  preferences?: string[];
 };
 
 const isEmail = (value: string): boolean => /\S+@\S+\.\S+/.test(value);
@@ -57,6 +60,9 @@ export const setAuthSession = (token: string, partialUser?: Partial<AuthUser>): 
     name: partialUser?.name || (typeof payload?.name === 'string' ? payload.name : undefined),
     email: partialUser?.email || (typeof payload?.email === 'string' ? payload.email : undefined),
     role: partialUser?.role || (typeof payload?.role === 'string' ? payload.role : undefined),
+    password: partialUser?.password,
+    profileImage: partialUser?.profileImage,
+    preferences: partialUser?.preferences,
   };
 
   localStorage.setItem(AUTH_TOKEN_KEY, token);
@@ -76,4 +82,22 @@ export const clearAuthSession = (): void => {
   localStorage.removeItem(AUTH_TOKEN_KEY);
   localStorage.removeItem(AUTH_USER_KEY);
   emitAuthChanged();
+};
+
+export const updateStoredUser = (updates: Partial<AuthUser>): AuthUser | null => {
+  const existing = getStoredUser();
+
+  if (!existing) {
+    return null;
+  }
+
+  const nextUser: AuthUser = {
+    ...existing,
+    ...updates,
+  };
+
+  localStorage.setItem(AUTH_USER_KEY, JSON.stringify(nextUser));
+  emitAuthChanged();
+
+  return nextUser;
 };

@@ -28,13 +28,20 @@ const ProfilePage: React.FC = () => {
             : user.role.charAt(0).toUpperCase() + user.role.slice(1)) 
         : 'Event Lover';
     const displayEmail = user?.email || 'Email not set';
+    const displayPreferences = user?.preferences ?? [];
 
     return(
         <PageLayout>
             <div className='w-full p-4 space-y-6 flex flex-col items-center mt-6'>
                 <div className='w-[82%] bg-[#1a0f10] border-4 border-[#fff3b0] p-8'>
                     <div className='w-full flex flex-row mb-6'>
-                        <div className='h-32 w-32 bg-[#e09f3e]'></div>
+                        <div className='h-32 w-32 bg-[#3a3122] border-3 border-[#fff3b0] overflow-hidden flex items-center justify-center'>
+                            {user?.profileImage ? (
+                                <img src={user.profileImage} alt={`${displayName} profile`} className='h-full w-full object-cover' />
+                            ) : (
+                                <span className='text-[#fff3b0] text-4xl font-bold'>{displayName.charAt(0).toUpperCase()}</span>
+                            )}
+                        </div>
                         <div className='flex flex-col ml-10'>
                             <div className='flex flex-row'>
                                 <h1 className='text-[#fff3b0] text-5xl font-bold mb-2'>{displayName}</h1>
@@ -52,6 +59,15 @@ const ProfilePage: React.FC = () => {
                         </div>
                     </div>
                     <p className='text-[#a89060] text-xl'>Find cultural experiences, concerts, exhibitions, and gatherings happening around you.</p>
+                    <div className='mt-6 flex flex-wrap gap-2'>
+                        {displayPreferences.length > 0 ? displayPreferences.map((preference) => (
+                            <span key={preference} className='px-3 py-1 border-2 border-[#fff3b0] bg-[#fff3b0] text-[#1a0f10] text-sm'>
+                                {preference}
+                            </span>
+                        )) : (
+                            <p className='text-[#a89060] text-lg'>No preferences set yet.</p>
+                        )}
+                    </div>
                     <section className='grid grid-cols-4'>
 
                     </section>

@@ -17,6 +17,7 @@ import AccountCustomizationPage from "./pages/account";
 import CustomerCustomizationPage from "./pages/customer_per";
 import ArtistCustomizationPage from "./pages/artist_per";
 import PromoterCustomizationPage from "./pages/promoter_per";
+import EditProfilePage from "./pages/editProfile";
 import { RegistrationProvider } from "./context/RegistrationContext.tsx";
 
 ReactDOM.createRoot(document.getElementById("app")!).render(
@@ -30,6 +31,7 @@ ReactDOM.createRoot(document.getElementById("app")!).render(
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
+                    <Route path="/edit-profile" element={<EditProfilePage />} />
                     <Route path="/events" element={<EventsPage />} />
                     <Route path="/friends" element={<FriendsPage />} />
                     <Route path="/social" element={<SocialPage />} />

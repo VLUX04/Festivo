@@ -74,10 +74,10 @@ app.post('/register/complete', async (req, res) => {
         await client.query('BEGIN');
 
         // insert into users
-        const result = await client.query(
-            'INSERT INTO users (username, name, email, pass, role, information, location) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
-            [username, name, email, hashedPass, role, bio, location]
-        );
+		const result = await client.query(
+			'INSERT INTO users (username, name, email, pass, role, information) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+			[username, name, email, hashedPass, role, bio]
+		);
         const userId = result.rows[0].id;
 
         if (accountType === 'customer') {
@@ -156,7 +156,7 @@ app.post('/login', async(req, res) => {
         const { pass, ...userWithoutPassword } = db_user;
 		// JWT
         const payload = { 
-			username: db_user....userWithoutPassword,
+			username: db_user.username,
 			name: db_user.name,
 			email: db_user.email,
 			role: db_user.role
