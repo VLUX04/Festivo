@@ -1,11 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageLayout from '../components/pageLayout'
-import { friendsTempData } from '../data/friendsTempData'
 
 const FriendsPage: React.FC = () => {
   const navigate = useNavigate();
-  const [friends, setFriends] = React.useState(friendsTempData)
+  const [friends, setFriends] = React.useState<Array<{name: string; image: string; mutualFriends: number; isFriend: boolean; role: string; location: string}>>([])
   const [selectedChat, setSelectedChat] = React.useState<string | null>(null);
   const [messages, setMessages] = React.useState<Record<string, Array<{text: string, sender: 'user' | 'friend'}>>>({});
 
@@ -33,7 +32,7 @@ const FriendsPage: React.FC = () => {
   const currentFriends = friends.filter((friend) => friend.isFriend)
   const notFriends = friends.filter((friend) => !friend.isFriend)
   
-  const userLocation = 'Porto';
+  const userLocation = '';
   const recommendedFriends = notFriends
     .filter((friend) => friend.location === userLocation && friend.mutualFriends > 0)
     .sort((a, b) => b.mutualFriends - a.mutualFriends)

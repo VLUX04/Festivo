@@ -16,6 +16,8 @@ export interface Event {
     promoter: string,
     description: string,
     location: string,
+    latitude?: number,
+    longitude?: number,
     time: string,
     attending: string,
     friendsGoing: string[],

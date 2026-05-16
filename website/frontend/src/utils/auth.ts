@@ -38,6 +38,18 @@ export const isAuthenticated = (): boolean => {
   return Boolean(localStorage.getItem(AUTH_TOKEN_KEY));
 };
 
+export const getAuthToken = (): string | null => {
+  return localStorage.getItem(AUTH_TOKEN_KEY);
+};
+
+export const isProfessionalRole = (role?: string): boolean => {
+  if (!role) {
+    return false;
+  }
+
+  return role.toLowerCase() !== 'customer';
+};
+
 export const getStoredUser = (): AuthUser | null => {
   const raw = localStorage.getItem(AUTH_USER_KEY);
   if (!raw) {

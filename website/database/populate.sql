@@ -29,27 +29,94 @@ INSERT INTO professional_profile (user_id) VALUES
 ON CONFLICT DO NOTHING;
 
 -- EVENTS
-INSERT INTO events (publisher_id, venue, sdate, edate, target, description) VALUES
-(1, 'Madison Square Garden, New York', '2026-05-10', '2026-05-10', 'Music lovers', 'An unforgettable night of live jazz featuring world-renowned artists.'),
-(2, 'Royal Albert Hall, London', '2026-06-01', '2026-06-03', 'Art enthusiasts', 'A three-day contemporary art exhibition showcasing emerging European artists.'),
-(3, 'Sydney Opera House, Sydney', '2026-06-15', '2026-06-15', 'Families', 'A magical orchestral performance of classic fairy tale soundtracks.'),
-(1, 'Palais des Congrès, Paris', '2026-07-04', '2026-07-06', 'Tech professionals', 'Annual technology summit covering AI, blockchain, and the future of work.'),
-(4, 'Tokyo International Forum, Tokyo', '2026-07-20', '2026-07-21', 'Photographers', 'A two-day workshop on landscape and street photography techniques.'),
-(2, 'Colosseum, Rome', '2026-08-01', '2026-08-01', 'History buffs', 'A guided night tour through ancient Rome with live historical reenactments.'),
-(5, 'Central Park, New York', '2026-08-14', '2026-08-16', 'General public', 'An outdoor summer festival featuring food, music, and cultural performances.'),
-(3, 'Elbphilharmonie, Hamburg', '2026-08-22', '2026-08-22', 'Classical music fans', 'An evening of Beethoven performed by the Hamburg Philharmonic Orchestra.'),
-(6, 'Marina Bay Sands, Singapore', '2026-09-05', '2026-09-07', 'Business professionals', 'A global finance and investment conference with keynote speakers from top firms.'),
-(4, 'Hollywood Bowl, Los Angeles', '2026-09-12', '2026-09-12', 'Film enthusiasts', 'An open-air cinema night screening classic Hollywood films under the stars.'),
-(7, 'Tate Modern, London', '2026-09-20', '2026-09-22', 'Art students', 'A hands-on sculpture workshop led by internationally recognized artists.'),
-(5, 'Fira de Barcelona, Barcelona', '2026-10-03', '2026-10-05', 'Game developers', 'The largest independent game development conference in Southern Europe.'),
-(8, 'Dubai World Trade Centre, Dubai', '2026-10-15', '2026-10-17', 'Entrepreneurs', 'A startup expo connecting founders with investors from across the Middle East.'),
-(6, 'Grand Palais, Paris', '2026-10-28', '2026-10-30', 'Fashion professionals', 'An exclusive fashion week event featuring collections from top designers.'),
-(9, 'National Mall, Washington D.C.', '2026-11-05', '2026-11-05', 'General public', 'A free outdoor concert celebrating cultural diversity with artists from 20 countries.'),
-(7, 'Carrousel du Louvre, Paris', '2026-11-12', '2026-11-14', 'Culinary professionals', 'An international gastronomy fair with live cooking demonstrations and tastings.'),
-(10, 'O2 Arena, London', '2026-11-20', '2026-11-20', 'Sports fans', 'A live esports championship featuring the top 16 teams from around the world.'),
-(8, 'Parc del Fòrum, Barcelona', '2026-12-01', '2026-12-03', 'Music producers', 'A three-day electronic music festival with over 50 international DJs.'),
-(9, 'Yas Island, Abu Dhabi', '2026-12-10', '2026-12-12', 'Families', 'A winter wonderland theme park experience with ice skating and live shows.'),
-(10, 'Alte Oper, Frankfurt', '2026-12-20', '2026-12-20', 'General public', 'A Christmas Eve special concert blending classical and contemporary holiday music.')
+INSERT INTO events (publisher_id, venue, latitude, longitude, sdate, edate, target, description) VALUES
+(1, 'Madison Square Garden, New York', 40.750500, -73.993400, '2026-05-10', '2026-05-10', 'Music lovers', 'An unforgettable night of live jazz featuring world-renowned artists.'),
+(2, 'Royal Albert Hall, London', 51.500900, -0.177400, '2026-06-01', '2026-06-03', 'Art enthusiasts', 'A three-day contemporary art exhibition showcasing emerging European artists.'),
+(3, 'Sydney Opera House, Sydney', -33.856800, 151.215300, '2026-06-15', '2026-06-15', 'Families', 'A magical orchestral performance of classic fairy tale soundtracks.'),
+(1, 'Palais des Congres, Paris', 48.878500, 2.282600, '2026-07-04', '2026-07-06', 'Tech professionals', 'Annual technology summit covering AI, blockchain, and the future of work.'),
+(4, 'Tokyo International Forum, Tokyo', 35.676400, 139.763000, '2026-07-20', '2026-07-21', 'Photographers', 'A two-day workshop on landscape and street photography techniques.'),
+(2, 'Colosseum, Rome', 41.890200, 12.492200, '2026-08-01', '2026-08-01', 'History buffs', 'A guided night tour through ancient Rome with live historical reenactments.'),
+(5, 'Central Park, New York', 40.785100, -73.968300, '2026-08-14', '2026-08-16', 'General public', 'An outdoor summer festival featuring food, music, and cultural performances.'),
+(3, 'Elbphilharmonie, Hamburg', 53.541300, 9.984100, '2026-08-22', '2026-08-22', 'Classical music fans', 'An evening of Beethoven performed by the Hamburg Philharmonic Orchestra.'),
+(6, 'Marina Bay Sands, Singapore', 1.283400, 103.860700, '2026-09-05', '2026-09-07', 'Business professionals', 'A global finance and investment conference with keynote speakers from top firms.'),
+(4, 'Hollywood Bowl, Los Angeles', 34.112200, -118.339100, '2026-09-12', '2026-09-12', 'Film enthusiasts', 'An open-air cinema night screening classic Hollywood films under the stars.'),
+(7, 'Tate Modern, London', 51.507600, -0.099400, '2026-09-20', '2026-09-22', 'Art students', 'A hands-on sculpture workshop led by internationally recognized artists.'),
+(5, 'Fira de Barcelona, Barcelona', 41.374000, 2.148300, '2026-10-03', '2026-10-05', 'Game developers', 'The largest independent game development conference in Southern Europe.'),
+(8, 'Dubai World Trade Centre, Dubai', 25.225100, 55.288600, '2026-10-15', '2026-10-17', 'Entrepreneurs', 'A startup expo connecting founders with investors from across the Middle East.'),
+(6, 'Grand Palais, Paris', 48.866100, 2.312500, '2026-10-28', '2026-10-30', 'Fashion professionals', 'An exclusive fashion week event featuring collections from top designers.'),
+(9, 'National Mall, Washington D.C.', 38.889500, -77.035300, '2026-11-05', '2026-11-05', 'General public', 'A free outdoor concert celebrating cultural diversity with artists from 20 countries.'),
+(7, 'Carrousel du Louvre, Paris', 48.861000, 2.335800, '2026-11-12', '2026-11-14', 'Culinary professionals', 'An international gastronomy fair with live cooking demonstrations and tastings.'),
+(10, 'O2 Arena, London', 51.503000, 0.003200, '2026-11-20', '2026-11-20', 'Sports fans', 'A live esports championship featuring the top 16 teams from around the world.'),
+(8, 'Parc del Forum, Barcelona', 41.411000, 2.219600, '2026-12-01', '2026-12-03', 'Music producers', 'A three-day electronic music festival with over 50 international DJs.'),
+(9, 'Yas Island, Abu Dhabi', 24.488300, 54.616600, '2026-12-10', '2026-12-12', 'Families', 'A winter wonderland theme park experience with ice skating and live shows.'),
+(10, 'Alte Oper, Frankfurt', 50.115500, 8.671000, '2026-12-20', '2026-12-20', 'General public', 'A Christmas Eve special concert blending classical and contemporary holiday music.')
+ON CONFLICT DO NOTHING;
+
+UPDATE events SET title = 'Jazz Under the Garden Lights', event_type = 'Music', event_time = '20:30', price = 'EUR 18' WHERE id = 1;
+UPDATE events SET title = 'Modern Forms', event_type = 'Art', event_time = '18:00', price = 'EUR 22' WHERE id = 2;
+UPDATE events SET title = 'Fairy Tale Symphony', event_type = 'Live', event_time = '19:30', price = 'EUR 15' WHERE id = 3;
+UPDATE events SET title = 'Future Work Summit', event_type = 'Conference', event_time = '09:00', price = 'EUR 40' WHERE id = 4;
+UPDATE events SET title = 'Lens Craft Workshop', event_type = 'Workshop', event_time = '16:00', price = 'EUR 12' WHERE id = 5;
+UPDATE events SET title = 'Night at the Colosseum', event_type = 'History', event_time = '21:00', price = 'EUR 20' WHERE id = 6;
+UPDATE events SET title = 'Summer Culture Fest', event_type = 'Festival', event_time = '12:00', price = 'Free Entry' WHERE id = 7;
+UPDATE events SET title = 'Beethoven by the Bay', event_type = 'Music', event_time = '19:00', price = 'EUR 16' WHERE id = 8;
+UPDATE events SET title = 'Finance Forward', event_type = 'Business', event_time = '08:30', price = 'EUR 55' WHERE id = 9;
+UPDATE events SET title = 'Open Air Cinema Classics', event_type = 'Cinema', event_time = '21:30', price = 'EUR 9' WHERE id = 10;
+UPDATE events SET title = 'Hands On Sculpture Lab', event_type = 'Workshop', event_time = '10:00', price = 'EUR 14' WHERE id = 11;
+UPDATE events SET title = 'Indie Dev Expo', event_type = 'Conference', event_time = '10:30', price = 'EUR 35' WHERE id = 12;
+UPDATE events SET title = 'Founder Launch Day', event_type = 'Startup', event_time = '09:30', price = 'EUR 28' WHERE id = 13;
+UPDATE events SET title = 'Runway Dispatch', event_type = 'Fashion', event_time = '17:00', price = 'EUR 30' WHERE id = 14;
+UPDATE events SET title = 'Global Sound Stage', event_type = 'Music', event_time = '20:00', price = 'Free Entry' WHERE id = 15;
+UPDATE events SET title = 'Gastronomy at the Louvre', event_type = 'Food', event_time = '11:00', price = 'EUR 24' WHERE id = 16;
+UPDATE events SET title = 'Championship Finals', event_type = 'Sport', event_time = '22:00', price = 'EUR 26' WHERE id = 17;
+UPDATE events SET title = 'Electronic Summer', event_type = 'Music', event_time = '18:30', price = 'EUR 19' WHERE id = 18;
+UPDATE events SET title = 'Winter Lights Park', event_type = 'Festival', event_time = '15:00', price = 'EUR 17' WHERE id = 19;
+UPDATE events SET title = 'Holiday Classics', event_type = 'Music', event_time = '19:45', price = 'EUR 21' WHERE id = 20;
+
+INSERT INTO images (id, url, alt_text) VALUES
+(1, 'https://picsum.photos/seed/event1/900/500', 'Jazz Under the Garden Lights'),
+(2, 'https://picsum.photos/seed/event2/900/500', 'Modern Forms'),
+(3, 'https://picsum.photos/seed/event3/900/500', 'Fairy Tale Symphony'),
+(4, 'https://picsum.photos/seed/event4/900/500', 'Future Work Summit'),
+(5, 'https://picsum.photos/seed/event5/900/500', 'Lens Craft Workshop'),
+(6, 'https://picsum.photos/seed/event6/900/500', 'Night at the Colosseum'),
+(7, 'https://picsum.photos/seed/event7/900/500', 'Summer Culture Fest'),
+(8, 'https://picsum.photos/seed/event8/900/500', 'Beethoven by the Bay'),
+(9, 'https://picsum.photos/seed/event9/900/500', 'Finance Forward'),
+(10, 'https://picsum.photos/seed/event10/900/500', 'Open Air Cinema Classics'),
+(11, 'https://picsum.photos/seed/event11/900/500', 'Hands On Sculpture Lab'),
+(12, 'https://picsum.photos/seed/event12/900/500', 'Indie Dev Expo'),
+(13, 'https://picsum.photos/seed/event13/900/500', 'Founder Launch Day'),
+(14, 'https://picsum.photos/seed/event14/900/500', 'Runway Dispatch'),
+(15, 'https://picsum.photos/seed/event15/900/500', 'Global Sound Stage'),
+(16, 'https://picsum.photos/seed/event16/900/500', 'Gastronomy at the Louvre'),
+(17, 'https://picsum.photos/seed/event17/900/500', 'Championship Finals'),
+(18, 'https://picsum.photos/seed/event18/900/500', 'Electronic Summer'),
+(19, 'https://picsum.photos/seed/event19/900/500', 'Winter Lights Park'),
+(20, 'https://picsum.photos/seed/event20/900/500', 'Holiday Classics')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO event_images (event_id, image_id, is_cover) VALUES
+(1, 1, TRUE),
+(2, 2, TRUE),
+(3, 3, TRUE),
+(4, 4, TRUE),
+(5, 5, TRUE),
+(6, 6, TRUE),
+(7, 7, TRUE),
+(8, 8, TRUE),
+(9, 9, TRUE),
+(10, 10, TRUE),
+(11, 11, TRUE),
+(12, 12, TRUE),
+(13, 13, TRUE),
+(14, 14, TRUE),
+(15, 15, TRUE),
+(16, 16, TRUE),
+(17, 17, TRUE),
+(18, 18, TRUE),
+(19, 19, TRUE),
+(20, 20, TRUE)
 ON CONFLICT DO NOTHING;
 
 -- CUSTOMER USERS (for chat and social features)
@@ -179,3 +246,7 @@ INSERT INTO message (chat_id, sender_id, content, sent_at) VALUES
 (10, 19, 'Can''t wait! We should plan a group hangout.', '2026-04-27 18:40:00'),
 (10, 20, 'Great idea! I''ll check with the others.', '2026-04-27 18:45:00')
 ON CONFLICT DO NOTHING;
+
+SELECT setval(pg_get_serial_sequence('users', 'id'), COALESCE(MAX(id), 0) + 1, false) FROM users;
+SELECT setval(pg_get_serial_sequence('images', 'id'), COALESCE(MAX(id), 0) + 1, false) FROM images;
+SELECT setval(pg_get_serial_sequence('chat', 'id'), COALESCE(MAX(id), 0) + 1, false) FROM chat;

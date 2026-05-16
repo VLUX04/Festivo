@@ -8,7 +8,7 @@ import workIcon from '../icons/work.png';
 import mapIcon from '../icons/map.png';
 import profileIcon from '../icons/profile.png';
 import loginIcon from '../icons/login.png';
-import { AUTH_CHANGED_EVENT, isAuthenticated } from '../utils/auth';
+import { AUTH_CHANGED_EVENT, getStoredUser, isAuthenticated, isProfessionalRole } from '../utils/auth';
 
 const navItems = [
     { label: 'Events', icon: eventsIcon },
@@ -23,9 +23,13 @@ const navButtonClass = 'group transition duration-333 ease-in-out border-2 borde
 const Header: React.FC = () => {
     const [menuOpen, setMenuOpen] = React.useState(false);
     const [isLogged, setIsLogged] = React.useState<boolean>(isAuthenticated());
+    const [isProfessional, setIsProfessional] = React.useState<boolean>(isProfessionalRole(getStoredUser()?.role));
 
     React.useEffect(() => {
-        const updateAuth = () => setIsLogged(isAuthenticated());
+        const updateAuth = () => {
+            setIsLogged(isAuthenticated());
+            setIsProfessional(isProfessionalRole(getStoredUser()?.role));
+        };
 
         window.addEventListener(AUTH_CHANGED_EVENT, updateAuth);
         window.addEventListener('storage', updateAuth);
@@ -56,7 +60,7 @@ const Header: React.FC = () => {
                 </div>
             </div>
             <div className='flex-3 flex'>
-                {navItems.map(({ label, icon }) => (
+                {navItems.filter(({ label }) => label !== 'Work' || isProfessional).map(({ label, icon }) => (
                     <div key={label} className='flex-1 flex justify-center place-items-center'>
                         <Link to={`/${label.toLowerCase()}`} className={navButtonClass}>
                             <img src={icon} alt="" className='h-5 w-5 object-contain group-active:mix-blend-color' aria-hidden='true' />

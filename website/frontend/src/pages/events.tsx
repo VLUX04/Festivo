@@ -1,19 +1,50 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import PageLayout from '../components/pageLayout'
 import EventContainer from '../components/event'
 import HighlightedEventCard from '../components/highlightedEvent.tsx'
 import brownCalendarIcon from '../icons/brown-calendar.png';
-import { eventsTempData } from '../data/eventsTempData'
-
-const highlightedEvents = eventsTempData.slice(0, 2);
+import { fetchEvents } from '../utils/events.ts';
 
 const EventsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [eventType, setEventType] = useState('');
   const [sortBy, setSortBy] = useState('');
+  const [events, setEvents] = useState<React.ComponentProps<typeof EventContainer>['event'][]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  React.useEffect(() => {
+    let isMounted = true;
+
+    const loadEvents = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        const loadedEvents = await fetchEvents();
+
+        if (isMounted) {
+          setEvents(loadedEvents);
+        }
+      } catch (loadError) {
+        if (isMounted) {
+          setError(loadError instanceof Error ? loadError.message : 'Failed to load events');
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadEvents();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const filteredAndSortedEvents = useMemo(() => {
-    let filtered = eventsTempData.filter((event) => {
+    let filtered = events.filter((event) => {
       const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesType = !eventType || event.type.toLowerCase() === eventType.toLowerCase();
       return matchesSearch && matchesType;
@@ -51,7 +82,9 @@ const EventsPage: React.FC = () => {
           return 0;
       }
     });
-  }, [searchQuery, eventType, sortBy]);
+  }, [events, searchQuery, eventType, sortBy]);
+
+  const highlightedEvents = filteredAndSortedEvents.slice(0, 2);
 
   return (
     <PageLayout>
@@ -83,6 +116,18 @@ const EventsPage: React.FC = () => {
               ))}
             </div>
           </div>
+
+          {loading && (
+            <div className='border-4 border-[#fff3b0] bg-[#1a0f10] p-8 text-[#fff3b0]'>
+              Loading events from the database...
+            </div>
+          )}
+
+          {error && (
+            <div className='border-4 border-[#ff6b6b] bg-[#1a0f10] p-8 text-[#ffb3b3]'>
+              {error}
+            </div>
+          )}
 
           <div className='border-4 border-[#fff3b0] bg-[#1a0f10] p-8 mb-8'>
             <div className='flex flex-col gap-4 md:flex-row md:items-end md:gap-6'>

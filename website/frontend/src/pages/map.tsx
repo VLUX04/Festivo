@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import PageLayout from '../components/pageLayout';
+import type { Event } from '../components/event';
+import { fetchEvents } from '../utils/events';
 
 // Leaflet icon setup
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -20,44 +22,6 @@ const orangeIcon = new L.Icon({
     popupAnchor: [1, -34],
     shadowSize: [41, 41]
 });
-
-const events = [
-  {
-    id: 1,
-    name: "Porto Music Fest",
-    date: "2026-06-15",
-    description: "A vibrant music festival celebrating local and international artists along the Douro riverfront.",
-    location: { city: "Porto", country: "Portugal", lat: 41.1579, lng: -8.6291 },
-  },
-  {
-    id: 2,
-    name: "Lisbon Tech Summit",
-    date: "2026-07-03",
-    description: "Annual gathering of tech innovators, startups, and investors shaping the future of Europe's tech scene.",
-    location: { city: "Lisbon", country: "Portugal", lat: 38.7169, lng: -9.1395 },
-  },
-  {
-    id: 3,
-    name: "Madrid Street Food Fair",
-    date: "2026-07-20",
-    description: "A weekend-long outdoor fair showcasing street food from over 30 countries in the heart of Madrid.",
-    location: { city: "Madrid", country: "Spain", lat: 40.4168, lng: -3.7038 },
-  },
-  {
-    id: 4,
-    name: "Paris Art & Culture Week",
-    date: "2026-08-10",
-    description: "A celebration of contemporary art, photography, and sculpture across iconic Parisian venues.",
-    location: { city: "Paris", country: "France", lat: 48.8566, lng: 2.3522 },
-  },
-  {
-    id: 5,
-    name: "Berlin Electronic Festival",
-    date: "2026-09-05",
-    description: "Three days of non-stop electronic music across multiple stages in Berlin's warehouse district.",
-    location: { city: "Berlin", country: "Germany", lat: 52.52, lng: 13.405 },
-  },
-];
 
 interface ChangeViewProps {
     center: [number, number];
@@ -78,10 +42,41 @@ const ChangeView: React.FC<ChangeViewProps> = ({ center, zoom }) => {
 }
 
 const MapPage: React.FC = () => {
-  const [selectedEvent, setSelectedEvent] = useState(events[0]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [zoom, setZoom] = useState(5);
+  const defaultCenter: [number, number] = [41.1579, -8.6291];
+  const [error, setError] = useState('');
 
-  const handleSelectEvent = (event: typeof events[0]) => {
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadEvents = async () => {
+      try {
+        setError('');
+        const loadedEvents = await fetchEvents();
+        if (isMounted) {
+          setEvents(loadedEvents);
+        }
+      } catch (loadError) {
+        if (isMounted) {
+          setError(loadError instanceof Error ? loadError.message : 'Failed to load events');
+        }
+      }
+    };
+
+    void loadEvents();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const eventsWithCoords = events.filter((event) =>
+    typeof event.latitude === 'number' && typeof event.longitude === 'number',
+  );
+
+  const handleSelectEvent = (event: Event) => {
     setSelectedEvent(event);
     setZoom(13);
   }
@@ -101,23 +96,27 @@ const MapPage: React.FC = () => {
             <div className="w-[70%]">
               <div className="aspect-[4/3] border-4 border-[#fff3b0] bg-[#1a0f10] p-4">
                 <MapContainer
-                  center={[selectedEvent.location.lat, selectedEvent.location.lng]}
+                  center={selectedEvent && selectedEvent.latitude !== undefined && selectedEvent.longitude !== undefined
+                    ? [selectedEvent.latitude, selectedEvent.longitude]
+                    : defaultCenter}
                   zoom={zoom}
                   className="h-full w-full rounded-lg"
                 >
-                  <ChangeView center={[selectedEvent.location.lat, selectedEvent.location.lng]} zoom={zoom} />
+                  {selectedEvent && selectedEvent.latitude !== undefined && selectedEvent.longitude !== undefined ? (
+                    <ChangeView center={[selectedEvent.latitude, selectedEvent.longitude]} zoom={zoom} />
+                  ) : null}
                   <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     attribution='&copy; OpenStreetMap contributors'
                   />
-                  {events.map((event) => (
+                  {eventsWithCoords.map((event) => (
                     <Marker 
-                      key={event.id} 
-                      position={[event.location.lat, event.location.lng]}
-                      icon={event.id === selectedEvent.id ? orangeIcon : defaultIcon}
+                      key={`${event.title}-${event.date}`}
+                      position={[event.latitude as number, event.longitude as number]}
+                      icon={selectedEvent && event.title === selectedEvent.title ? orangeIcon : defaultIcon}
                     >
                       <Popup>
-                        <strong>{event.name}</strong><br />
+                        <strong>{event.title}</strong><br />
                         {event.date}
                       </Popup>
                     </Marker>
@@ -130,24 +129,35 @@ const MapPage: React.FC = () => {
               <div className='border-4 border-[#fff3b0] bg-[#1a0f10] p-6 h-full flex flex-col'>
                 <h2 className="text-3xl font-bold mb-4 text-[#fff3b0]">Events List</h2>
                 <div className="space-y-4 overflow-y-auto flex-grow pr-2 custom-scrollbar">
-                  {events.map((event) => (
-                    <div key={event.id} className="border-2 border-[#a89060] rounded-lg p-4 bg-[#2a1f20]">
-                      <h3 className="text-xl font-bold text-[#fff3b0]">{event.name}</h3>
-                      <p className="text-[#a89060]">{event.date}</p>
-                      <p className="text-[#a89060]">{event.location.city}, {event.location.country}</p>
-                      <div className="flex mt-4 space-x-2">
-                        <button
-                          onClick={() => handleSelectEvent(event)}
-                          className="bg-[#e3a63e] text-[#1a0f10] px-4 py-2 rounded-lg font-bold"
-                        >
-                          See on Map
-                        </button>
-                        <button className="bg-gray-500 text-white px-4 py-2 rounded-lg">
-                          See Details
-                        </button>
-                      </div>
+                  {error && (
+                    <div className="border-2 border-[#ff6b6b] rounded-lg p-4 bg-[#2a1f20] text-[#ffb3b3]">
+                      {error}
                     </div>
-                  ))}
+                  )}
+                  {eventsWithCoords.length === 0 ? (
+                    <div className="border-2 border-[#a89060] rounded-lg p-4 bg-[#2a1f20] text-[#a89060]">
+                      No events available yet.
+                    </div>
+                  ) : (
+                    eventsWithCoords.map((event) => (
+                      <div key={`${event.title}-${event.date}`} className="border-2 border-[#a89060] rounded-lg p-4 bg-[#2a1f20]">
+                        <h3 className="text-xl font-bold text-[#fff3b0]">{event.title}</h3>
+                        <p className="text-[#a89060]">{event.date}</p>
+                        <p className="text-[#a89060]">{event.location}</p>
+                        <div className="flex mt-4 space-x-2">
+                          <button
+                            onClick={() => handleSelectEvent(event)}
+                            className="bg-[#e3a63e] text-[#1a0f10] px-4 py-2 rounded-lg font-bold"
+                          >
+                            See on Map
+                          </button>
+                          <button className="bg-gray-500 text-white px-4 py-2 rounded-lg">
+                            See Details
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>

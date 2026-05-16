@@ -136,10 +136,139 @@ app.post('/login', async(req, res) => {
 		} else {
 			// authenticate based on username
 			const result = await pool.query('SELECT username, name, email, role, pass, name, email, role FROM users WHERE username = $1', [credential]);
+
+	const getEventsQuery = `
+		SELECT
+			e.id,
+			e.title,
+			e.event_type AS "eventType",
+			e.venue,
+			e.latitude,
+			e.longitude,
+			e.sdate,
+			e.edate,
+			e.event_time AS "eventTime",
+			e.target,
+			e.description,
+			e.price,
+			COALESCE(u.name, u.username) AS promoter,
+			COALESCE(img.url, '') AS src,
+			COALESCE(img.alt_text, e.title) AS alt,
+			COALESCE(attending.attending_count, 0) AS "attendingCount"
+		FROM events e
+		LEFT JOIN users u ON e.publisher_id = u.id
+		LEFT JOIN LATERAL (
+			SELECT i.url, i.alt_text
+			FROM event_images ei
+			JOIN images i ON i.id = ei.image_id
+			WHERE ei.event_id = e.id
+			ORDER BY ei.is_cover DESC, i.id ASC
+			LIMIT 1
+		) img ON true
+		LEFT JOIN LATERAL (
+			SELECT COUNT(*)::int AS attending_count
+			FROM application a
+			WHERE a.event_id = e.id
+		) attending ON true
+		ORDER BY e.sdate ASC, e.event_time ASC, e.id ASC
+	`;
 			const user = result.rows[0];
 			if (!user) return res.status(404).json({success: false, message: 'User with the provided username not found'});
 
 			db_user = user;
+
+	app.get('/events', async (_req: any, res: any) => {
+		try {
+			const events = await pool.query(getEventsQuery);
+			res.status(200).json({ success: true, events: events.rows });
+		} catch (err) {
+			console.error(err);
+			res.status(500).json({ success: false, message: 'Internal server error' });
+		}
+	});
+
+	app.post('/events', loginMiddleware, async (req: any, res: any) => {
+		const client = await pool.connect();
+		try {
+			const currentUserResult = await pool.query('SELECT id, role FROM users WHERE username = $1', [req.user.username]);
+			const currentUser = currentUserResult.rows[0];
+
+			if (!currentUser) {
+				return res.status(404).json({ success: false, message: 'User not found' });
+			}
+
+			if (currentUser.role !== 'professional') {
+				return res.status(403).json({ success: false, message: 'Only professionals can create events' });
+			}
+
+			const {
+				title,
+				eventType,
+				venue,
+				latitude,
+				longitude,
+				sdate,
+				edate,
+				eventTime,
+				target,
+				description,
+				price,
+				imageUrl,
+				imageAlt,
+			} = req.body;
+
+			if (!title || !eventType || !venue || latitude === undefined || longitude === undefined || !sdate || !edate || !eventTime || !description) {
+				return res.status(400).json({ success: false, message: 'Missing required event fields' });
+			}
+
+			await client.query('BEGIN');
+
+			const insertedEvent = await client.query(
+				`INSERT INTO events (publisher_id, title, event_type, venue, latitude, longitude, sdate, edate, event_time, target, description, price)
+				 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+				 RETURNING id`,
+				[
+					currentUser.id,
+					title,
+					eventType,
+					venue,
+					latitude,
+					longitude,
+					sdate,
+					edate,
+					eventTime,
+					target || null,
+					description,
+					price || null,
+				],
+			);
+
+			const eventId = insertedEvent.rows[0].id;
+
+			if (imageUrl) {
+				const image = await client.query(
+					'INSERT INTO images (url, alt_text) VALUES ($1, $2) RETURNING id',
+					[imageUrl, imageAlt || title],
+				);
+
+				await client.query(
+					'INSERT INTO event_images (event_id, image_id, is_cover) VALUES ($1, $2, TRUE)',
+					[eventId, image.rows[0].id],
+				);
+			}
+
+			await client.query('COMMIT');
+
+			const createdEvent = await pool.query(`SELECT * FROM (${getEventsQuery}) events WHERE id = $1`, [eventId]);
+			res.status(201).json({ success: true, event: createdEvent.rows[0] });
+		} catch (err) {
+			await client.query('ROLLBACK');
+			console.error(err);
+			res.status(500).json({ success: false, message: 'Internal server error' });
+		} finally {
+			client.release();
+		}
+	});
 		}
 		
 		const db_password: string = db_user.pass;

@@ -45,11 +45,17 @@ CREATE TABLE customer_preferences (
 CREATE TABLE events (
     id SERIAL PRIMARY KEY,
     publisher_id INT,
+    title VARCHAR(255),
+    event_type VARCHAR(100),
     venue VARCHAR(255),
+    latitude NUMERIC(9,6) NOT NULL,
+    longitude NUMERIC(9,6) NOT NULL,
     sdate DATE,
     edate DATE,
+    event_time TIME,
     target VARCHAR(255),
     description TEXT,
+    price VARCHAR(50),
     FOREIGN KEY (publisher_id) REFERENCES professional_profile(user_id)
 );
 
