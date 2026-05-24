@@ -3,7 +3,8 @@ import PageLayout from '../components/pageLayout'
 import EventContainer from '../components/event'
 import HighlightedEventCard from '../components/highlightedEvent.tsx'
 import brownCalendarIcon from '../icons/brown-calendar.png';
-import { fetchEvents } from '../utils/events.ts';
+import { fetchEvents, fetchRecommendedEvents } from '../utils/events.ts';
+import { getStoredUser } from '../utils/auth.ts';
 
 const EventsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -12,6 +13,9 @@ const EventsPage: React.FC = () => {
   const [events, setEvents] = useState<React.ComponentProps<typeof EventContainer>['event'][]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const user = getStoredUser();
+  const [recommendedEvents, setRecommendedEvents] = useState<React.ComponentProps<typeof EventContainer>['event'][]>([]);
 
   React.useEffect(() => {
     let isMounted = true;
@@ -33,6 +37,11 @@ const EventsPage: React.FC = () => {
         if (isMounted) {
           setLoading(false);
         }
+      }
+
+      if (user?.id) {
+        const recommended = await fetchRecommendedEvents(user.id);
+        if (isMounted) setRecommendedEvents(recommended);
       }
     };
 
@@ -116,6 +125,26 @@ const EventsPage: React.FC = () => {
               ))}
             </div>
           </div>
+
+            {user?.role === 'customer' && recommendedEvents.length > 0 && (
+                <div className='border-4 border-[#fff3b0] bg-[#1a0f10] p-8'>
+                    <div className='mb-8 flex items-start gap-4'>
+                        <div className='pt-1'>
+                            <h2 className='text-4xl font-black uppercase tracking-tight text-[#fff3b0]'>
+                                Recommended For You
+                            </h2>
+                            <p className='mt-2 max-w-2xl text-[#a89060] text-lg'>
+                                Events matching your preferences.
+                            </p>
+                        </div>
+                    </div>
+                    <div className='grid gap-10 md:grid-cols-2 xl:grid-cols-3'>
+                        {recommendedEvents.map((event) => (
+                            <EventContainer key={`rec-${event.title}-${event.date}`} event={event} />
+                        ))}
+                    </div>
+                </div>
+            )}
 
           {loading && (
             <div className='border-4 border-[#fff3b0] bg-[#1a0f10] p-8 text-[#fff3b0]'>

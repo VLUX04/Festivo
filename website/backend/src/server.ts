@@ -324,6 +324,29 @@ app.post('/events', loginMiddleware, async (req: any, res: any) => {
     }
 });
 
+app.get('/events/recommended/:userId', async (req: any, res: any) => {
+    try {
+        const { userId } = req.params;
+        const result = await pool.query(`
+            SELECT 
+                e.*,
+                COUNT(DISTINCT cp.tag_name) AS score
+            FROM events e
+            LEFT JOIN event_tags et ON et.event_id = e.id
+            LEFT JOIN customer_preferences cp 
+                ON cp.tag_name = et.tag_name
+                AND cp.customer_id = $1
+            GROUP BY e.id
+            ORDER BY score DESC
+            LIMIT 6
+        `, [userId]);
+        res.status(200).json({ success: true, events: result.rows });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
 
 //
 // CHAT ENDPOINTS
