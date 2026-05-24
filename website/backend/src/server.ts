@@ -145,14 +145,14 @@ app.post('/login', async(req, res) => {
 
 		let db_user;
 		if (isValidEmail(credential)) {
-			const result = await pool.query('SELECT username, name, email, role, pass, name, email, role FROM users WHERE email = $1', [credential]);
+			const result = await pool.query('SELECT id, username, name, email, role, pass, name, email, role FROM users WHERE email = $1', [credential]);
 			const user = result.rows[0];
 			if (!user) return res.status(404).json({success: false, message: 'User with the provided email not found'});
 
 			db_user = user;
 		} else {
 			// authenticate based on username
-			const result = await pool.query('SELECT username, name, email, role, pass, name, email, role FROM users WHERE username = $1', [credential]);
+			const result = await pool.query('SELECT id, username, name, email, role, pass, name, email, role FROM users WHERE username = $1', [credential]);
             const user = result.rows[0];
 			if (!user) return res.status(404).json({success: false, message: 'User with the provided username not found'});
 
@@ -173,6 +173,7 @@ app.post('/login', async(req, res) => {
         const { pass, ...userWithoutPassword } = db_user;
 		// JWT
         const payload = { 
+            id: db_user.id,
 			username: db_user.username,
 			name: db_user.name,
 			email: db_user.email,

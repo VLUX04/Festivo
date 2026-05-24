@@ -3,6 +3,7 @@ export const AUTH_USER_KEY = 'currentUser';
 export const AUTH_CHANGED_EVENT = 'festivo-auth-changed';
 
 export type AuthUser = {
+  id?: number;
   username: string;
   name?: string;
   email?: string;
@@ -68,6 +69,7 @@ export const setAuthSession = (token: string, partialUser?: Partial<AuthUser>): 
   const payloadUsername = typeof payload?.username === 'string' ? payload.username : undefined;
 
   const currentUser: AuthUser = {
+    id: partialUser?.id || (typeof payload?.id === 'number' ? payload.id : undefined),
     username: partialUser?.username || payloadUsername || 'user',
     name: partialUser?.name || (typeof payload?.name === 'string' ? payload.name : undefined),
     email: partialUser?.email || (typeof payload?.email === 'string' ? payload.email : undefined),
