@@ -28,6 +28,28 @@ INSERT INTO professional_profile (user_id) VALUES
 (1), (2), (3), (4), (5), (6), (7), (8), (9), (10)
 ON CONFLICT DO NOTHING;
 
+INSERT INTO tags (tag_name) VALUES
+    ('Techno'),
+    ('House'),
+    ('Jazz'),
+    ('Rock'),
+    ('Hip Hop'),
+    ('Electronic'),
+    ('Theatre'),
+    ('Art'),
+    ('Cinema'),
+    ('Dance'),
+    ('Comedy'),
+    ('Classical'),
+    ('Technology'),
+    ('Business'),
+    ('Fashion'),
+    ('Food'),
+    ('Photography'),
+    ('Gaming'),
+    ('Music')
+ON CONFLICT DO NOTHING;
+
 -- EVENTS
 INSERT INTO events (publisher_id, venue, latitude, longitude, sdate, edate, target, description) VALUES
 (1, 'Madison Square Garden, New York', 40.750500, -73.993400, '2026-05-10', '2026-05-10', 'Music lovers', 'An unforgettable night of live jazz featuring world-renowned artists.'),
@@ -72,6 +94,35 @@ UPDATE events SET title = 'Championship Finals', event_type = 'Sport', event_tim
 UPDATE events SET title = 'Electronic Summer', event_type = 'Music', event_time = '18:30', price = 'EUR 19' WHERE id = 18;
 UPDATE events SET title = 'Winter Lights Park', event_type = 'Festival', event_time = '15:00', price = 'EUR 17' WHERE id = 19;
 UPDATE events SET title = 'Holiday Classics', event_type = 'Music', event_time = '19:45', price = 'EUR 21' WHERE id = 20;
+
+INSERT INTO event_tags (event_id, tag_name) VALUES (1, 'Jazz');
+INSERT INTO event_tags (event_id, tag_name) VALUES (2, 'Art');
+INSERT INTO event_tags (event_id, tag_name) VALUES (3, 'Classical');
+INSERT INTO event_tags (event_id, tag_name) VALUES (4, 'Technology');
+INSERT INTO event_tags (event_id, tag_name) VALUES (4, 'Business');
+INSERT INTO event_tags (event_id, tag_name) VALUES (5, 'Photography');
+INSERT INTO event_tags (event_id, tag_name) VALUES (6, 'Art');
+INSERT INTO event_tags (event_id, tag_name) VALUES (6, 'Theatre');
+INSERT INTO event_tags (event_id, tag_name) VALUES (7, 'Dance');
+INSERT INTO event_tags (event_id, tag_name) VALUES (7, 'Jazz');
+INSERT INTO event_tags (event_id, tag_name) VALUES (8, 'Classical');
+INSERT INTO event_tags (event_id, tag_name) VALUES (9, 'Business');
+INSERT INTO event_tags (event_id, tag_name) VALUES (10, 'Cinema');
+INSERT INTO event_tags (event_id, tag_name) VALUES (11, 'Art');
+INSERT INTO event_tags (event_id, tag_name) VALUES (12, 'Gaming');
+INSERT INTO event_tags (event_id, tag_name) VALUES (12, 'Technology');
+INSERT INTO event_tags (event_id, tag_name) VALUES (13, 'Business');
+INSERT INTO event_tags (event_id, tag_name) VALUES (13, 'Technology');
+INSERT INTO event_tags (event_id, tag_name) VALUES (14, 'Fashion');
+INSERT INTO event_tags (event_id, tag_name) VALUES (15, 'Music');
+INSERT INTO event_tags (event_id, tag_name) VALUES (15, 'Dance');
+INSERT INTO event_tags (event_id, tag_name) VALUES (16, 'Food');
+INSERT INTO event_tags (event_id, tag_name) VALUES (17, 'Gaming');
+INSERT INTO event_tags (event_id, tag_name) VALUES (18, 'Electronic');
+INSERT INTO event_tags (event_id, tag_name) VALUES (18, 'House');
+INSERT INTO event_tags (event_id, tag_name) VALUES (18, 'Techno');
+INSERT INTO event_tags (event_id, tag_name) VALUES (19, 'Dance');
+INSERT INTO event_tags (event_id, tag_name) VALUES (20, 'Classical');
 
 INSERT INTO images (id, url, alt_text) VALUES
 (1, 'https://picsum.photos/seed/event1/900/500', 'Jazz Under the Garden Lights'),
