@@ -26,7 +26,7 @@ BEGIN
     END IF;
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql
+$$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_enforce_event_date_order
 BEFORE INSERT OR UPDATE ON events
@@ -96,7 +96,7 @@ DECLARE
 BEGIN
     SELECT publisher_id INTO v_publisher_id FROM professional_profile WHERE id = NEW.event_id;
 
-    IF v_publisher_id == NEW.publisher_id THEN
+    IF v_publisher_id = NEW.publisher_id THEN
         RAISE EXCEPTION 'Professional % cannot apply to their own event (%).', NEW.publisher_id, NEW.event_id;
     END IF;
 
