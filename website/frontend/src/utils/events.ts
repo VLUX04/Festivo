@@ -107,3 +107,12 @@ export const createEvent = async (payload: EventCreatePayload): Promise<void> =>
     throw new Error(data.message || 'Failed to create event');
   }
 };
+
+export const fetchRecommendedEvents = async (userId: number): Promise<Event[]> => {
+    const response = await fetch(`${API_BASE_URL}/events/recommended/${userId}`);
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Failed to load recommended events');
+    }
+    return (data.events as EventApiRecord[]).map(mapEventApiRecord);
+};

@@ -43,6 +43,7 @@ const LoginPage: React.FC = () => {
 		  if (data.success) {
 			  alert("Login successful!");
               setAuthSession(data.token, {
+                  id: data.user.id,
                   username: data.user.username,
                   name: data.user.name,
                   email: data.user.email,

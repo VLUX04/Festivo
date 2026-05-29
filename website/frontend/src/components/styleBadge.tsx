@@ -6,7 +6,8 @@ type StyleBadgeProps = {
 };
 
 const StyleBadge: React.FC<StyleBadgeProps> = ({ onSelect }) => {
-    const genres = ["Techno", "House", "Jazz", "Rock", "Hip Hop", "Eletronic", "Theatre", "Art", "Cinema", "Dance", "Comedy", "Classical"];
+
+    const genres = ["Techno", "House", "Jazz", "Rock", "Hip Hop", "Electronic", "Theatre", "Art", "Cinema", "Dance", "Comedy", "Classical", "Technology", "Business", "Fashion", "Food", "Photography", "Gaming", "Music"];
 
     return (
         <div className="self-center w-[50em] h-auto px-6 py-4 m-7 mb-3 bg-[#1a0f10] border-3 border-[#483d30] flex flex-col">
