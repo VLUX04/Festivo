@@ -1,22 +1,21 @@
-import express from 'express';
-import jwt from 'jsonwebtoken';
-import bcryptjs from 'bcryptjs';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import bodyParser from 'body-parser';
+import express from 'express';
 
-import pool from './db.js';
-import { isValidEmail } from './utils.js';
+import authRoutes from './routes/auth.routes.js';
+import chatRoutes from './routes/chat.routes.js';
+import eventRoutes from './routes/event.routes.js';
 
-// secret key for signing JWTs
-const SECRET_KEY = 'my_secret_key'; //WARNING: this should probably not be here in prod, also same for all users???
+dotenv.config();
 
 const app = express();
-app.use(bodyParser.json());
+const PORT = process.env.PORT || 3000;
+
+app.use(express.json());
 app.use(
-  bodyParser.urlencoded({
-    extended: true,
-  }),
+	express.urlencoded({
+		extended: true,
+	}),
 );
 dotenv.config();
 const PORT = process.env.PORT || 3000;
@@ -485,5 +484,15 @@ app.get('/chat/friends', loginMiddleware, async (req: any, res: any) => {
 		res.status(500).json({ success: false, message: 'Internal server error' });
 	}
 });
+
+app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
+
+app.get('/', (_req, res) => {
+	res.send('Backend is running!');
+});
+
+app.use(authRoutes);
+app.use('/events', eventRoutes);
+app.use('/chat', chatRoutes);
 
 app.listen(PORT, () => console.log('running broder ' + process.env.DB_HOST));
