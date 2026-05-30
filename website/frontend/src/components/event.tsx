@@ -22,6 +22,7 @@ export interface Event {
     attending: string,
     friendsGoing: string[],
     price: string,
+    ticketLink?: string,
 }
 
 const EventContainer: React.FC<{ event: Event }> = ({ event }) => (
@@ -69,7 +70,19 @@ const EventContainer: React.FC<{ event: Event }> = ({ event }) => (
                 <span className='text-[#a89060] pr-6'>{event.price}</span>
             </div>
             
-            <button className='transition duration-300 ease-in-out text-[#fff3b0] p-2 mx-6 mb-6 border border-[#483d30] hover:bg-[#fff3b0] hover:border-[#fff3b0] hover:text-[#1a0f10]'>View Details</button>
+            <div className='mx-6 mb-6 flex flex-col gap-3 sm:flex-row'>
+                <button className='transition duration-300 ease-in-out text-[#fff3b0] p-2 border border-[#483d30] hover:bg-[#fff3b0] hover:border-[#fff3b0] hover:text-[#1a0f10]'>View Details</button>
+                {event.ticketLink ? (
+                    <a
+                        href={event.ticketLink}
+                        target='_blank'
+                        rel='noreferrer'
+                        className='transition duration-300 ease-in-out text-center text-[#1a0f10] p-2 border border-[#fff3b0] bg-[#fff3b0] hover:bg-[#1a0f10] hover:text-[#fff3b0]'
+                    >
+                        Buy Tickets
+                    </a>
+                ) : null}
+            </div>
     </div>
 )
 

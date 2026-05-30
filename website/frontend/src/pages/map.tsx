@@ -31,12 +31,7 @@ interface ChangeViewProps {
 const ChangeView: React.FC<ChangeViewProps> = ({ center, zoom }) => {
     const map = useMap();
     useEffect(() => {
-        map.setView(center, zoom, {
-            animate: true,
-            pan: {
-                duration: 1,
-            },
-        });
+    map.setView(center, zoom, { animate: true });
     }, [center, zoom, map]);
     return null;
 }

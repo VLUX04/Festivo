@@ -56,6 +56,7 @@ CREATE TABLE events (
     target VARCHAR(255),
     description TEXT,
     price VARCHAR(50),
+    ticket_link VARCHAR(500),
     FOREIGN KEY (publisher_id) REFERENCES professional_profile(user_id)
 );
 

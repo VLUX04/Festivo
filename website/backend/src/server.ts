@@ -208,6 +208,7 @@ const getEventsQuery = `
         e.target,
         e.description,
         e.price,
+        e.ticket_link AS "ticketLink",
         COALESCE(u.name, u.username) AS promoter,
         COALESCE(img.url, '') AS src,
         COALESCE(img.alt_text, e.title) AS alt,
@@ -267,6 +268,7 @@ app.post('/events', loginMiddleware, async (req: any, res: any) => {
             target,
             description,
             price,
+            ticketLink,
             imageUrl,
             imageAlt,
         } = req.body;
@@ -278,8 +280,8 @@ app.post('/events', loginMiddleware, async (req: any, res: any) => {
         await client.query('BEGIN');
 
         const insertedEvent = await client.query(
-            `INSERT INTO events (publisher_id, title, event_type, venue, latitude, longitude, sdate, edate, event_time, target, description, price)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+            `INSERT INTO events (publisher_id, title, event_type, venue, latitude, longitude, sdate, edate, event_time, target, description, price, ticket_link)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
              RETURNING id`,
             [
                 currentUser.id,
@@ -294,6 +296,7 @@ app.post('/events', loginMiddleware, async (req: any, res: any) => {
                 target || null,
                 description,
                 price || null,
+                ticketLink || null,
             ],
         );
 

@@ -1,10 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom'
 import PageLayout from '../components/pageLayout'
-
-const sectionStyle = 'flex flex-col w-[54%] my-10 place-self-center transition duration-333 ease-in-out border-2 bg-[#1a0f10] border-[#483d30] hover:border-[#fff3b0] p-6'
-const sectionTitleStyle = 'text-4xl font-bold text-[#fff3b0] mb-5 mt-8'
-const textStyle = 'text-[#a88e5d] mb-4 leading-relaxed'
 
 const TermsPage: React.FC = () => {
   return (

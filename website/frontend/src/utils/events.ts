@@ -17,6 +17,7 @@ type EventApiRecord = {
   target: string | null;
   description: string | null;
   price: string | null;
+  ticketLink: string | null;
   promoter: string | null;
   src: string | null;
   alt: string | null;
@@ -35,6 +36,7 @@ export type EventCreatePayload = {
   target?: string;
   description: string;
   price?: string;
+  ticketLink?: string;
   imageUrl?: string;
   imageAlt?: string;
 };
@@ -73,6 +75,7 @@ export const mapEventApiRecord = (event: EventApiRecord): Event => ({
   attending: `${Number(event.attendingCount || 0)} people attending`,
   friendsGoing: [],
   price: event.price || 'Free',
+  ticketLink: event.ticketLink || undefined,
 });
 
 export const fetchEvents = async (): Promise<Event[]> => {
