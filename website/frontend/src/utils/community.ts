@@ -256,17 +256,15 @@ const normalizeFeed = (feed: CommunityFeedResponse): CommunityState => ({
 const loadFeedFromServer = async (): Promise<void> => {
   const headers = authHeaders();
 
-  if (!headers) {
-    setCurrentState(seedState());
-    return;
-  }
-
   try {
-    const data = await requestJson<{ feed: CommunityFeedResponse }>('/social/feed', {
-      headers,
-    });
+    const init: RequestInit | undefined = headers
+      ? { headers }
+      : undefined;
+
+    const data = await requestJson<{ feed: CommunityFeedResponse }>('/social/feed', init);
     setCurrentState(normalizeFeed(data.feed));
   } catch {
+    // If the server call fails (network, CORS, or server error), keep a sensible seeded feed
     setCurrentState(seedState());
   }
 };

@@ -295,6 +295,13 @@ export async function followProfessional(username: string, professionalUsername:
     return { ok: false as const, status: 400, message: 'Can only follow professionals' };
   }
 
+  if (currentUser.role !== 'customer') {
+    return { ok: false as const, status: 400, message: 'Only customers can follow professionals' };
+  }
+
+  // Ensure a customer profile exists for the follower to satisfy FK constraint
+  await pool.query('INSERT INTO customer (customer_id) VALUES ($1) ON CONFLICT DO NOTHING', [currentUser.id]);
+
   const followResult = await pool.query(
     'INSERT INTO follows (customer_id, professional_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING customer_id',
     [currentUser.id, targetUser.id],

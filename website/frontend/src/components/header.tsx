@@ -79,7 +79,11 @@ const Header: React.FC = () => {
                 </div>
             </div>
             <div className='flex-3 flex'>
-                {navItems.filter(({ label }) => label !== 'Work' || isProfessional).map(({ label, icon }) => (
+                {navItems.filter(({ label }) => {
+                    if (label === 'Work') return isProfessional;
+                    if (label === 'Friends' || label === 'Social') return isLogged;
+                    return true;
+                }).map(({ label, icon }) => (
                     <div key={label} className='flex-1 flex justify-center place-items-center'>
                         <Link to={`/${label.toLowerCase()}`} className={navButtonClass}>
                             <img src={icon} alt="" className='h-5 w-5 object-contain group-active:mix-blend-color' aria-hidden='true' />
@@ -110,48 +114,50 @@ const Header: React.FC = () => {
                     }
                     
                 </div>
-                <div className='relative flex-1 place-items-end'>
-                    <button
-                        type='button'
-                        aria-label='Toggle menu'
-                        aria-expanded={menuOpen}
-                        onClick={() => setMenuOpen((prev) => !prev)}
-                        className='flex flex-col h-5 w-7 gap-1 group cursor-pointer'>
-                        <div className={`transition duration-500 ease-in-out bg-[#fff3b0] w-[90%] h-2 ${menuOpen ? 'rotate-45 translate-y-[200%]' : 'group-hover'} group-hover:scale-110`}></div>
-                        <div className={`transition duration-500 ease-in-out bg-[#fff3b0] w-[90%] h-2 origin-center ${menuOpen ? 'scale-x-0 opacity-0' : 'group-hover'} group-hover:scale-110`}></div>
-                        <div className={`transition duration-500 ease-in-out bg-[#fff3b0] w-[90%] h-2 ${menuOpen ? '-rotate-45 -translate-y-[200%]' : 'group-hover'} group-hover:scale-110`}></div>
-                    </button>
+                {isLogged ? (
+                    <div className='relative flex-1 place-items-end'>
+                        <button
+                            type='button'
+                            aria-label='Toggle menu'
+                            aria-expanded={menuOpen}
+                            onClick={() => setMenuOpen((prev) => !prev)}
+                            className='flex flex-col h-5 w-7 gap-1 group cursor-pointer'>
+                            <div className={`transition duration-500 ease-in-out bg-[#fff3b0] w-[90%] h-2 ${menuOpen ? 'rotate-45 translate-y-[200%]' : 'group-hover'} group-hover:scale-110`}></div>
+                            <div className={`transition duration-500 ease-in-out bg-[#fff3b0] w-[90%] h-2 origin-center ${menuOpen ? 'scale-x-0 opacity-0' : 'group-hover'} group-hover:scale-110`}></div>
+                            <div className={`transition duration-500 ease-in-out bg-[#fff3b0] w-[90%] h-2 ${menuOpen ? '-rotate-45 -translate-y-[200%]' : 'group-hover'} group-hover:scale-110`}></div>
+                        </button>
 
-                    {menuOpen ? (
-                        <div className='absolute right-0 top-[calc(100%+0.75rem)] z-50 w-64 border-2 border-[#fff3b0] bg-[#120707] p-3 shadow-[0_18px_60px_rgba(0,0,0,0.45)]'>
-                            <button
-                                type='button'
-                                onClick={() => {
-                                    setNotificationsOpen((prev) => !prev);
-                                    setMenuOpen(false);
-                                }}
-                                className='mb-2 w-full border border-[#483d30] px-4 py-3 text-left text-[#fff3b0] transition hover:border-[#fff3b0] hover:bg-[#1a0f10]'
-                            >
-                                Notifications {unreadNotifications > 0 ? `(${unreadNotifications})` : ''}
-                            </button>
-                            <button
-                                type='button'
-                                onClick={() => {
-                                    clearAuthSession();
-                                    setMenuOpen(false);
-                                    setNotificationsOpen(false);
-                                    navigate('/login');
-                                }}
-                                className='w-full border border-[#483d30] px-4 py-3 text-left text-[#fff3b0] transition hover:border-[#fff3b0] hover:bg-[#1a0f10]'
-                            >
-                                Logout
-                            </button>
-                        </div>
-                    ) : null}
-                </div>
+                        {menuOpen ? (
+                            <div className='absolute right-0 top-[calc(100%+0.75rem)] z-50 w-64 border-2 border-[#fff3b0] bg-[#120707] p-3 shadow-[0_18px_60px_rgba(0,0,0,0.45)]'>
+                                <button
+                                    type='button'
+                                    onClick={() => {
+                                        setNotificationsOpen((prev) => !prev);
+                                        setMenuOpen(false);
+                                    }}
+                                    className='mb-2 w-full border border-[#483d30] px-4 py-3 text-left text-[#fff3b0] transition hover:border-[#fff3b0] hover:bg-[#1a0f10]'
+                                >
+                                    Notifications {unreadNotifications > 0 ? `(${unreadNotifications})` : ''}
+                                </button>
+                                <button
+                                    type='button'
+                                    onClick={() => {
+                                        clearAuthSession();
+                                        setMenuOpen(false);
+                                        setNotificationsOpen(false);
+                                        navigate('/login');
+                                    }}
+                                    className='w-full border border-[#483d30] px-4 py-3 text-left text-[#fff3b0] transition hover:border-[#fff3b0] hover:bg-[#1a0f10]'
+                                >
+                                    Logout
+                                </button>
+                            </div>
+                        ) : null}
+                    </div>
+                ) : null}
             </div>
 
-            {notificationsOpen ? (
+            {isLogged && notificationsOpen ? (
                 <div className='absolute right-0 top-[calc(100%+0.75rem)] z-50 w-[22rem] border-2 border-[#fff3b0] bg-[#120707] p-4 shadow-[0_18px_60px_rgba(0,0,0,0.45)]'>
                     <div className='flex items-center justify-between gap-3'>
                         <h3 className='text-lg font-bold text-[#fff3b0]'>Notifications</h3>

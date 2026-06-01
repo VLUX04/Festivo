@@ -6,6 +6,7 @@ import friendsIcon from '../icons/friends.png';
 import priceIcon from '../icons/price.png';
 import shareIcon from '../icons/share.png';
 import shareDarkIcon from '../icons/share-dark.png';
+import { isAuthenticated } from '../utils/auth';
 
 export interface Event {
     id?: number,
@@ -39,17 +40,19 @@ const EventContainer: React.FC<{ event: Event; onViewDetails?: (event: Event) =>
                         <img src={shareDarkIcon} alt="" className='hidden h-5 w-5 group-hover:block' aria-hidden='true' />
                     </button>
                 </div>
-                <div className='absolute bottom-4 left-4 z-10 flex items-center -space-x-2'>
-                    {event.friendsGoing.slice(0, 3).map((friendAvatar, index) => (
-                        <img
-                            key={`${friendAvatar}-${index}`}
-                            src={friendAvatar}
-                            alt=''
-                            className='h-9 w-9 rounded-full border-2 border-[#1a0f10] object-cover'
-                            aria-hidden='true'
-                        />
-                    ))}
-                </div>
+                {isAuthenticated() ? (
+                    <div className='absolute bottom-4 left-4 z-10 flex items-center -space-x-2'>
+                        {event.friendsGoing.slice(0, 3).map((friendAvatar, index) => (
+                            <img
+                                key={`${friendAvatar}-${index}`}
+                                src={friendAvatar}
+                                alt=''
+                                className='h-9 w-9 rounded-full border-2 border-[#1a0f10] object-cover'
+                                aria-hidden='true'
+                            />
+                        ))}
+                    </div>
+                ) : null}
             </div>
             <h1 className='text-[#fff3b0] px-6 text-2xl'>{event.title}</h1>
             <p className='px-6 text-base text-[#fff3b0]'>{event.promoter}</p>

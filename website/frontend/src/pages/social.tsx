@@ -12,6 +12,8 @@ import {
   togglePostLike,
   useCommunityState,
 } from '../utils/community.ts';
+import { isAuthenticated, AUTH_CHANGED_EVENT } from '../utils/auth';
+import { useNavigate } from 'react-router-dom';
 
 const SocialPage: React.FC = () => {
   const { stories, posts, notifications } = useCommunityState();
@@ -21,7 +23,18 @@ const SocialPage: React.FC = () => {
   const [commentDrafts, setCommentDrafts] = React.useState<Record<number, string>>({});
 
   const unreadCount = notifications.filter((notification) => !notification.read).length;
+  const navigate = useNavigate();
+  const [isLogged, setIsLogged] = React.useState<boolean>(isAuthenticated());
 
+  React.useEffect(() => {
+    const update = () => setIsLogged(isAuthenticated());
+    window.addEventListener(AUTH_CHANGED_EVENT, update);
+    window.addEventListener('storage', update);
+    return () => {
+      window.removeEventListener(AUTH_CHANGED_EVENT, update);
+      window.removeEventListener('storage', update);
+    };
+  }, []);
   const handleComposerImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
 
@@ -39,6 +52,11 @@ const SocialPage: React.FC = () => {
   const handleCreatePublication = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    if (!isLogged) {
+      navigate('/login');
+      return;
+    }
+
     if (!composerCaption.trim() || !composerImage) {
       return;
     }
@@ -55,6 +73,11 @@ const SocialPage: React.FC = () => {
   };
 
   const handleCommentSubmit = (postId: number) => {
+    if (!isLogged) {
+      navigate('/login');
+      return;
+    }
+
     const draft = commentDrafts[postId] || '';
     addCommentToPost(postId, draft);
     setCommentDrafts((previous) => ({
@@ -64,6 +87,11 @@ const SocialPage: React.FC = () => {
   };
 
   const handleSharePost = async (postId: number, caption: string) => {
+    if (!isLogged) {
+      navigate('/login');
+      return;
+    }
+
     sharePost(postId);
 
     const shareText = `Check out this Festivo post: ${caption}`;
@@ -186,14 +214,14 @@ const SocialPage: React.FC = () => {
                     <div className='flex flex-wrap gap-3'>
                       <button
                         type='button'
-                        onClick={() => togglePostLike(post.id)}
+                        onClick={() => { if (!isLogged) { navigate('/login'); return; } togglePostLike(post.id); }}
                         className={`border px-4 py-2 font-semibold transition ${post.likedByMe ? 'border-[#fff3b0] bg-[#fff3b0] text-[#540b0e]' : 'border-[#483d30] text-[#fff3b0] hover:border-[#fff3b0]'}`}
                       >
                         Like {post.likes}
                       </button>
                       <button
                         type='button'
-                        onClick={() => togglePostFavorite(post.id)}
+                        onClick={() => { if (!isLogged) { navigate('/login'); return; } togglePostFavorite(post.id); }}
                         className={`border px-4 py-2 font-semibold transition ${post.favoritedByMe ? 'border-[#fff3b0] bg-[#fff3b0] text-[#540b0e]' : 'border-[#483d30] text-[#fff3b0] hover:border-[#fff3b0]'}`}
                       >
                         Favorite {post.favorites}
@@ -252,14 +280,14 @@ const SocialPage: React.FC = () => {
               <div className='mt-5 space-y-3'>
                 <button
                   type='button'
-                  onClick={() => simulateIncomingFollow('jazzmaster')}
+                  onClick={() => { if (!isLogged) { navigate('/login'); return; } simulateIncomingFollow('jazzmaster'); }}
                   className='w-full border-2 border-[#fff3b0] px-4 py-3 font-semibold text-[#fff3b0] transition hover:bg-[#fff3b0] hover:text-[#540b0e]'
                 >
                   Follow sample artist
                 </button>
                 <button
                   type='button'
-                  onClick={() => simulateIncomingLike(posts[0]?.caption || 'your post', 'Sofia')}
+                  onClick={() => { if (!isLogged) { navigate('/login'); return; } simulateIncomingLike(posts[0]?.caption || 'your post', 'Sofia'); }}
                   className='w-full border-2 border-[#483d30] px-4 py-3 font-semibold text-[#fff3b0] transition hover:border-[#fff3b0]'
                 >
                   Like a sample post
@@ -287,7 +315,7 @@ const SocialPage: React.FC = () => {
                 <h2 className='text-3xl font-extrabold text-[#f6e8ab]'>Notifications</h2>
                 <button
                   type='button'
-                  onClick={() => markAllNotificationsRead()}
+                  onClick={() => { if (!isLogged) { navigate('/login'); return; } markAllNotificationsRead(); }}
                   className='text-sm text-[#a89060] transition hover:text-[#fff3b0]'
                 >
                   Mark read
@@ -312,7 +340,7 @@ const SocialPage: React.FC = () => {
 
               <button
                 type='button'
-                onClick={() => clearNotifications()}
+                onClick={() => { if (!isLogged) { navigate('/login'); return; } clearNotifications(); }}
                 className='mt-4 w-full border-2 border-[#483d30] px-4 py-3 font-semibold text-[#fff3b0] transition hover:border-[#fff3b0]'
               >
                 Clear notifications
