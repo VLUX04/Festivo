@@ -2,7 +2,9 @@ import React, { useMemo, useState } from 'react';
 import PageLayout from '../components/pageLayout'
 import EventContainer from '../components/event'
 import HighlightedEventCard from '../components/highlightedEvent.tsx'
+import EventDetailsModal from '../components/eventDetailsModal';
 import brownCalendarIcon from '../icons/brown-calendar.png';
+import { useNavigate } from 'react-router-dom';
 import { fetchEvents, fetchRecommendedEvents } from '../utils/events.ts';
 import { getStoredUser } from '../utils/auth.ts';
 
@@ -11,8 +13,10 @@ const EventsPage: React.FC = () => {
   const [eventType, setEventType] = useState('');
   const [sortBy, setSortBy] = useState('');
   const [events, setEvents] = useState<React.ComponentProps<typeof EventContainer>['event'][]>([]);
+  const [selectedEvent, setSelectedEvent] = useState<React.ComponentProps<typeof EventContainer>['event'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   const user = getStoredUser();
   const [recommendedEvents, setRecommendedEvents] = useState<React.ComponentProps<typeof EventContainer>['event'][]>([]);
@@ -95,6 +99,14 @@ const EventsPage: React.FC = () => {
 
   const highlightedEvents = filteredAndSortedEvents.slice(0, 2);
 
+  const handleViewDetails = (event: React.ComponentProps<typeof EventContainer>['event']) => {
+    setSelectedEvent(event);
+  };
+
+  const handleSeeOnMap = (event: React.ComponentProps<typeof EventContainer>['event']) => {
+    navigate(`/map?eventId=${event.id ?? ''}`);
+  };
+
   return (
     <PageLayout>
       <div className='w-full p-4 space-y-6 flex flex-col items-center mt-6'>
@@ -121,7 +133,7 @@ const EventsPage: React.FC = () => {
 
             <div className='grid gap-8 xl:grid-cols-2'>
               {highlightedEvents.map((event) => (
-                <HighlightedEventCard key={`${event.title}-${event.date}`} event={event} />
+                <HighlightedEventCard key={`${event.title}-${event.date}`} event={event} onViewDetails={handleViewDetails} />
               ))}
             </div>
           </div>
@@ -140,7 +152,7 @@ const EventsPage: React.FC = () => {
                     </div>
                     <div className='grid gap-10 md:grid-cols-2 xl:grid-cols-3'>
                         {recommendedEvents.map((event) => (
-                            <EventContainer key={`rec-${event.title}-${event.date}`} event={event} />
+                          <EventContainer key={`rec-${event.title}-${event.date}`} event={event} onViewDetails={handleViewDetails} />
                         ))}
                     </div>
                 </div>
@@ -207,11 +219,16 @@ const EventsPage: React.FC = () => {
 
           <div className='grid gap-10 md:grid-cols-2 xl:grid-cols-3 mb-7'>
             {filteredAndSortedEvents.map((event) => (
-              <EventContainer key={`${event.title}-${event.date}`} event={event} />
+              <EventContainer key={`${event.title}-${event.date}`} event={event} onViewDetails={handleViewDetails} />
             ))}
           </div>
         </div>
       </div>
+      <EventDetailsModal
+        event={selectedEvent}
+        onClose={() => setSelectedEvent(null)}
+        onSeeOnMap={handleSeeOnMap}
+      />
     </PageLayout>
   );
 };

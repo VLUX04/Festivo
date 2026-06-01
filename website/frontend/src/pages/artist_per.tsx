@@ -34,7 +34,7 @@ const ArtistCustomizationPage: React.FC = () => {
     };
 
     return (
-        <PageLayout>
+        <div className='content flex flex-col'>
             <CompleteProfile />
             <Preferences
                 accountType="Artist"
@@ -49,7 +49,7 @@ const ArtistCustomizationPage: React.FC = () => {
                 onSelect={(genre) => saveRegistration({ preferences: [genre] })}
             />
             <CompleteSetup onClick={handleSubmit} disabled={!isComplete}/>
-        </PageLayout>
+        </div>
     );
 };
 

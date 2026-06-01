@@ -5,7 +5,7 @@ import eventsIcon from '../icons/events.png';
 import friendsIcon from '../icons/friends.png';
 import priceIcon from '../icons/price.png';
 
-const HighlightedEventCard: React.FC<{ event: Event }> = ({ event }) => (
+const HighlightedEventCard: React.FC<{ event: Event; onViewDetails?: (event: Event) => void }> = ({ event, onViewDetails }) => (
   <article className='group grid overflow-hidden border-[4px] border-[#fff3b0] bg-[#120707] text-[#fff3b0] lg:grid-cols-2'>
     <div className='relative min-h-[360px] overflow-hidden lg:min-h-[520px]'>
       <img src={event.src} alt={event.alt} className='h-full w-full object-cover transition duration-500 ease-out group-hover:scale-105' />
@@ -63,7 +63,11 @@ const HighlightedEventCard: React.FC<{ event: Event }> = ({ event }) => (
       </div>
 
       <div className='mt-auto'>
-        <button className=' w-full transition duration-300 ease-in-out text-[#fff3b0] p-2 mb-6 border border-[#483d30] hover:bg-[#fff3b0] hover:border-[#fff3b0] hover:text-[#1a0f10]'>
+        <button
+          type='button'
+          onClick={() => onViewDetails?.(event)}
+          className=' w-full transition duration-300 ease-in-out text-[#fff3b0] p-2 mb-6 border border-[#483d30] hover:bg-[#fff3b0] hover:border-[#fff3b0] hover:text-[#1a0f10]'
+        >
           View Details
         </button>
       </div>

@@ -1,0 +1,538 @@
+import React from 'react';
+import { AUTH_CHANGED_EVENT, getAuthToken, getStoredUser } from './auth';
+
+const API_BASE_URL = 'http://localhost:3000';
+
+export type CommunityNotification = {
+  id: number;
+  kind: 'follow' | 'like' | 'comment' | 'share' | 'favorite';
+  title: string;
+  message: string;
+  timestamp: string;
+  read: boolean;
+};
+
+export type CommunityComment = {
+  id: number;
+  author: string;
+  body: string;
+  timestamp: string;
+};
+
+export type CommunityPost = {
+  id: number;
+  author: string;
+  avatar: string;
+  image: string;
+  caption: string;
+  location: string;
+  likes: number;
+  comments: CommunityComment[];
+  favorites: number;
+  shares: number;
+  likedByMe: boolean;
+  favoritedByMe: boolean;
+  sharedByMe: boolean;
+  isMine: boolean;
+};
+
+export type CommunityStory = {
+  id: number;
+  author: string;
+  avatar: string;
+  image: string;
+  label: string;
+};
+
+export type AttendedEvent = {
+  id: number;
+  title: string;
+  image: string;
+  location: string;
+  date: string;
+  status: string;
+};
+
+export type CommunityState = {
+  stories: CommunityStory[];
+  posts: CommunityPost[];
+  notifications: CommunityNotification[];
+  attendedEvents: AttendedEvent[];
+};
+
+type CommunityFeedResponse = {
+  stories: CommunityStory[];
+  posts: Array<CommunityPost & { comments: CommunityComment[] | string }>; 
+  notifications: CommunityNotification[];
+  attendedEvents: AttendedEvent[];
+};
+
+const seedState = (): CommunityState => ({
+  stories: [
+    {
+      id: 1,
+      author: 'Marina Silva',
+      avatar: 'https://picsum.photos/seed/story-1/100/100',
+      image: 'https://picsum.photos/seed/story-1-cover/600/900',
+      label: 'Opening night',
+    },
+    {
+      id: 2,
+      author: 'Rui Costa',
+      avatar: 'https://picsum.photos/seed/story-2/100/100',
+      image: 'https://picsum.photos/seed/story-2-cover/600/900',
+      label: 'Backstage',
+    },
+    {
+      id: 3,
+      author: getStoredUser()?.name || getStoredUser()?.username || 'You',
+      avatar: 'https://picsum.photos/seed/story-3/100/100',
+      image: 'https://picsum.photos/seed/story-3-cover/600/900',
+      label: 'My night out',
+    },
+  ],
+  posts: [
+    {
+      id: 1,
+      author: getStoredUser()?.name || getStoredUser()?.username || 'You',
+      avatar: 'https://picsum.photos/seed/post-avatar-1/120/120',
+      image: 'https://picsum.photos/seed/post-1/900/800',
+      caption: 'Golden lights, loud drums, and the best crowd I have seen all year.',
+      location: 'Porto, Portugal',
+      likes: 142,
+      comments: [
+        {
+          id: 1,
+          author: 'Nina',
+          body: 'This looks unforgettable.',
+          timestamp: new Date().toISOString(),
+        },
+      ],
+      favorites: 28,
+      shares: 14,
+      likedByMe: false,
+      favoritedByMe: false,
+      sharedByMe: false,
+      isMine: true,
+    },
+    {
+      id: 2,
+      author: 'Luna Stage',
+      avatar: 'https://picsum.photos/seed/post-avatar-2/120/120',
+      image: 'https://picsum.photos/seed/post-2/900/800',
+      caption: 'Soundcheck finished. The crowd is in for a long night.',
+      location: 'Lisbon, Portugal',
+      likes: 87,
+      comments: [],
+      favorites: 19,
+      shares: 10,
+      likedByMe: false,
+      favoritedByMe: false,
+      sharedByMe: false,
+      isMine: false,
+    },
+    {
+      id: 3,
+      author: 'Atlas Collective',
+      avatar: 'https://picsum.photos/seed/post-avatar-3/120/120',
+      image: 'https://picsum.photos/seed/post-3/900/800',
+      caption: 'New mural, new music, same old city magic.',
+      location: 'Coimbra, Portugal',
+      likes: 64,
+      comments: [
+        {
+          id: 2,
+          author: 'Ana',
+          body: 'This color palette is stunning.',
+          timestamp: new Date().toISOString(),
+        },
+      ],
+      favorites: 9,
+      shares: 5,
+      likedByMe: false,
+      favoritedByMe: false,
+      sharedByMe: false,
+      isMine: false,
+    },
+  ],
+  notifications: [
+    {
+      id: 1,
+      kind: 'follow',
+      title: 'New follower',
+      message: 'Sofia Martins started following you.',
+      timestamp: new Date().toISOString(),
+      read: false,
+    },
+    {
+      id: 2,
+      kind: 'like',
+      title: 'New like',
+      message: 'Ana Ribeiro liked "Golden lights, loud drums, and the best crowd I have seen all year.".',
+      timestamp: new Date().toISOString(),
+      read: false,
+    },
+  ],
+  attendedEvents: [
+    {
+      id: 1,
+      title: 'Summer Jazz Session',
+      image: 'https://picsum.photos/seed/attended-1/700/500',
+      location: 'Riverside Hall',
+      date: 'May 12, 2026',
+      status: 'Attended',
+    },
+    {
+      id: 2,
+      title: 'Street Art Parade',
+      image: 'https://picsum.photos/seed/attended-2/700/500',
+      location: 'Downtown Avenue',
+      date: 'May 18, 2026',
+      status: 'Attended',
+    },
+    {
+      id: 3,
+      title: 'Open-Air Cinema',
+      image: 'https://picsum.photos/seed/attended-3/700/500',
+      location: 'City Park',
+      date: 'May 24, 2026',
+      status: 'Saved for later',
+    },
+  ],
+});
+
+export const emptyCommunityState: CommunityState = {
+  stories: [],
+  posts: [],
+  notifications: [],
+  attendedEvents: [],
+};
+
+let currentState: CommunityState = seedState();
+const listeners = new Set<() => void>();
+
+const emitChange = (): void => {
+  listeners.forEach((listener) => listener());
+};
+
+const setCurrentState = (nextState: CommunityState): void => {
+  currentState = nextState;
+  emitChange();
+};
+
+const authHeaders = (): HeadersInit | null => {
+  const token = getAuthToken();
+
+  if (!token) {
+    return null;
+  }
+
+  return {
+    Authorization: `Bearer ${token}`,
+  };
+};
+
+const requestJson = async <T,>(path: string, init?: RequestInit): Promise<T> => {
+  const response = await fetch(`${API_BASE_URL}${path}`, init);
+  const data = await response.json();
+
+  if (!response.ok || !data.success) {
+    throw new Error(data.message || 'Request failed');
+  }
+
+  return data as T;
+};
+
+const normalizeFeed = (feed: CommunityFeedResponse): CommunityState => ({
+  stories: feed.stories || [],
+  posts: (feed.posts || []).map((post) => ({
+    ...post,
+    comments: Array.isArray(post.comments) ? post.comments : [],
+  })),
+  notifications: feed.notifications || [],
+  attendedEvents: feed.attendedEvents || [],
+});
+
+const loadFeedFromServer = async (): Promise<void> => {
+  const headers = authHeaders();
+
+  if (!headers) {
+    setCurrentState(seedState());
+    return;
+  }
+
+  try {
+    const data = await requestJson<{ feed: CommunityFeedResponse }>('/social/feed', {
+      headers,
+    });
+    setCurrentState(normalizeFeed(data.feed));
+  } catch {
+    setCurrentState(seedState());
+  }
+};
+
+const updatePostOptimistically = (postId: number, updater: (post: CommunityPost) => CommunityPost): void => {
+  setCurrentState({
+    ...currentState,
+    posts: currentState.posts.map((post) => (post.id === postId ? updater(post) : post)),
+  });
+};
+
+const updateNotificationOptimistically = (updater: (notifications: CommunityNotification[]) => CommunityNotification[]): void => {
+  setCurrentState({
+    ...currentState,
+    notifications: updater(currentState.notifications),
+  });
+};
+
+export const useCommunityState = (): CommunityState => {
+  const state = React.useSyncExternalStore(
+    (listener) => {
+      listeners.add(listener);
+
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    () => currentState,
+    () => seedState(),
+  );
+
+  React.useEffect(() => {
+    void loadFeedFromServer();
+
+    const refresh = () => {
+      void loadFeedFromServer();
+    };
+
+    window.addEventListener(AUTH_CHANGED_EVENT, refresh);
+    window.addEventListener('storage', refresh);
+
+    return () => {
+      window.removeEventListener(AUTH_CHANGED_EVENT, refresh);
+      window.removeEventListener('storage', refresh);
+    };
+  }, []);
+
+  return state;
+};
+
+export const refreshCommunityState = (): Promise<void> => loadFeedFromServer();
+
+export const markAllNotificationsRead = (): void => {
+  updateNotificationOptimistically((notifications) => notifications.map((notification) => ({ ...notification, read: true })));
+
+  const headers = authHeaders();
+  if (!headers) {
+    return;
+  }
+
+  void requestJson('/social/notifications/read-all', {
+    method: 'POST',
+    headers: {
+      ...headers,
+      'Content-Type': 'application/json',
+    },
+  }).catch(() => undefined);
+};
+
+export const clearNotifications = (): void => {
+  updateNotificationOptimistically(() => []);
+
+  const headers = authHeaders();
+  if (!headers) {
+    return;
+  }
+
+  void requestJson('/social/notifications', {
+    method: 'DELETE',
+    headers,
+  }).catch(() => undefined);
+};
+
+export const simulateIncomingFollow = (professionalUsername: string): void => {
+  const headers = authHeaders();
+
+  if (!headers) {
+    return;
+  }
+
+  void requestJson('/social/follows', {
+    method: 'POST',
+    headers: {
+      ...headers,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ professionalUsername }),
+  })
+    .then(() => loadFeedFromServer())
+    .catch(() => undefined);
+};
+
+export const simulateIncomingLike = (postTitle: string, likerName: string): void => {
+  const actorLabel = likerName.trim();
+  const targetPost = currentState.posts.find((post) => post.caption === postTitle) || currentState.posts.find((post) => !post.isMine) || currentState.posts[0];
+
+  if (!targetPost || !actorLabel) {
+    return;
+  }
+
+  void togglePostLike(targetPost.id);
+};
+
+export const createPost = (payload: { caption: string; image: string; location?: string }): void => {
+  const optimisticPost: CommunityPost = {
+    id: Date.now(),
+    author: getStoredUser()?.name || getStoredUser()?.username || 'You',
+    avatar: `https://picsum.photos/seed/user-${Date.now()}/120/120`,
+    image: payload.image,
+    caption: payload.caption,
+    location: payload.location || 'My feed',
+    likes: 0,
+    comments: [],
+    favorites: 0,
+    shares: 0,
+    likedByMe: false,
+    favoritedByMe: false,
+    sharedByMe: false,
+    isMine: true,
+  };
+
+  setCurrentState({
+    ...currentState,
+    posts: [optimisticPost, ...currentState.posts],
+  });
+
+  const headers = authHeaders();
+  if (!headers) {
+    return;
+  }
+
+  void requestJson('/social/publications', {
+    method: 'POST',
+    headers: {
+      ...headers,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  })
+    .then(() => loadFeedFromServer())
+    .catch(() => undefined);
+};
+
+export const togglePostLike = (postId: number): void => {
+  const post = currentState.posts.find((entry) => entry.id === postId);
+
+  if (!post) {
+    return;
+  }
+
+  const nextLiked = !post.likedByMe;
+  updatePostOptimistically(postId, (entry) => ({
+    ...entry,
+    likedByMe: nextLiked,
+    likes: Math.max(0, entry.likes + (nextLiked ? 1 : -1)),
+  }));
+
+  const headers = authHeaders();
+  if (!headers) {
+    return;
+  }
+
+  void requestJson(`/social/publications/${postId}/like`, {
+    method: 'POST',
+    headers,
+  })
+    .then(() => loadFeedFromServer())
+    .catch(() => undefined);
+};
+
+export const togglePostFavorite = (postId: number): void => {
+  const post = currentState.posts.find((entry) => entry.id === postId);
+
+  if (!post) {
+    return;
+  }
+
+  const nextFavorited = !post.favoritedByMe;
+  updatePostOptimistically(postId, (entry) => ({
+    ...entry,
+    favoritedByMe: nextFavorited,
+    favorites: Math.max(0, entry.favorites + (nextFavorited ? 1 : -1)),
+  }));
+
+  const headers = authHeaders();
+  if (!headers) {
+    return;
+  }
+
+  void requestJson(`/social/publications/${postId}/favorite`, {
+    method: 'POST',
+    headers,
+  })
+    .then(() => loadFeedFromServer())
+    .catch(() => undefined);
+};
+
+export const sharePost = (postId: number): void => {
+  updatePostOptimistically(postId, (entry) => ({
+    ...entry,
+    shares: entry.shares + 1,
+    sharedByMe: true,
+  }));
+
+  const headers = authHeaders();
+  if (!headers) {
+    return;
+  }
+
+  void requestJson(`/social/publications/${postId}/share`, {
+    method: 'POST',
+    headers,
+  })
+    .then(() => loadFeedFromServer())
+    .catch(() => undefined);
+};
+
+export const addCommentToPost = (postId: number, body: string): void => {
+  const trimmed = body.trim();
+
+  if (!trimmed) {
+    return;
+  }
+
+  updatePostOptimistically(postId, (entry) => ({
+    ...entry,
+    comments: [
+      ...entry.comments,
+      {
+        id: Date.now(),
+        author: getStoredUser()?.name || getStoredUser()?.username || 'You',
+        body: trimmed,
+        timestamp: new Date().toISOString(),
+      },
+    ],
+  }));
+
+  const headers = authHeaders();
+  if (!headers) {
+    return;
+  }
+
+  void requestJson(`/social/publications/${postId}/comments`, {
+    method: 'POST',
+    headers: {
+      ...headers,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ body: trimmed }),
+  })
+    .then(() => loadFeedFromServer())
+    .catch(() => undefined);
+};
+
+export const getNotificationCount = (state: CommunityState): number =>
+  state.notifications.filter((notification) => !notification.read).length;
+
+export const getNotificationPreview = (state: CommunityState): CommunityNotification[] =>
+  state.notifications.slice(0, 5);

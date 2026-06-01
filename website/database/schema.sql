@@ -129,7 +129,10 @@ CREATE TABLE publication (
     media VARCHAR(255),
     publish_date DATE,
     information TEXT,
+    location VARCHAR(255),
     likes INT DEFAULT 0,
+    favorites INT DEFAULT 0,
+    shares INT DEFAULT 0,
     event_id INT,
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (event_id) REFERENCES events(id)
@@ -137,13 +140,66 @@ CREATE TABLE publication (
 
 -- COMMENTS
 CREATE TABLE comments (
-    publication_id INT,
-    user_id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
+    publication_id INT NOT NULL,
+    user_id INT NOT NULL,
     information TEXT,
-    publish_date DATE,
+    publish_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     likes INT DEFAULT 0,
     FOREIGN KEY (publication_id) REFERENCES publication(id),
     FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- STORIES
+CREATE TABLE stories (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL,
+    media VARCHAR(500) NOT NULL,
+    label VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- PUBLICATION REACTIONS
+CREATE TABLE publication_reactions (
+    publication_id INT,
+    user_id INT,
+    liked BOOLEAN DEFAULT FALSE,
+    favorited BOOLEAN DEFAULT FALSE,
+    shared BOOLEAN DEFAULT FALSE,
+    PRIMARY KEY (publication_id, user_id),
+    FOREIGN KEY (publication_id) REFERENCES publication(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- SOCIAL NOTIFICATIONS
+CREATE TYPE notification_kind AS ENUM ('follow', 'like', 'comment', 'share', 'favorite');
+CREATE TABLE notifications (
+    id SERIAL PRIMARY KEY,
+    recipient_user_id INT NOT NULL,
+    actor_user_id INT,
+    kind notification_kind NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    publication_id INT,
+    event_id INT,
+    FOREIGN KEY (recipient_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (publication_id) REFERENCES publication(id) ON DELETE CASCADE,
+    FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+);
+
+-- ATTENDED EVENTS
+CREATE TABLE attended_events (
+    user_id INT NOT NULL,
+    event_id INT NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'Attended',
+    attended_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, event_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
 );
 
 -- APPLICATION
@@ -188,6 +244,25 @@ CREATE TABLE professional_history (
     PRIMARY KEY (professional_id, event_id),
     FOREIGN KEY (professional_id) REFERENCES professional_profile(user_id),
     FOREIGN KEY (event_id) REFERENCES events(id)
+);
+
+-- WORK OPPORTUNITIES
+CREATE TYPE work_mode AS ENUM ('remote', 'hybrid', 'onsite');
+CREATE TYPE work_duration AS ENUM ('week', 'month', 'contract', 'ongoing');
+CREATE TYPE employment_type AS ENUM ('part-time', 'full-time');
+CREATE TABLE work_opportunities (
+    id SERIAL PRIMARY KEY,
+    poster_id INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    position VARCHAR(255) NOT NULL,
+    mode work_mode NOT NULL,
+    duration work_duration NOT NULL,
+    employment employment_type NOT NULL,
+    pay VARCHAR(100) NOT NULL,
+    description TEXT NOT NULL,
+    location VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (poster_id) REFERENCES professional_profile(user_id) ON DELETE CASCADE
 );
 
 -- PROFESSIONAL INVITE

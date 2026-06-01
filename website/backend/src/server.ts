@@ -5,6 +5,8 @@ import express from 'express';
 import authRoutes from './routes/auth.routes.js';
 import chatRoutes from './routes/chat.routes.js';
 import eventRoutes from './routes/event.routes.js';
+import socialRoutes from './routes/social.routes.js';
+import workRoutes from './routes/work.routes.js';
 
 dotenv.config();
 
@@ -25,6 +27,8 @@ if (process.env.PROD) {
 app.use('/', authRoutes);
 app.use('/events', eventRoutes);
 app.use('/chat', chatRoutes);
+app.use('/social', socialRoutes);
+app.use('/work', workRoutes);
 
 app.get('/', (_req, res) => {
     res.send('Backend is running!');

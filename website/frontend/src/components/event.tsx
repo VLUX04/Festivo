@@ -8,6 +8,7 @@ import shareIcon from '../icons/share.png';
 import shareDarkIcon from '../icons/share-dark.png';
 
 export interface Event {
+    id?: number,
     src: string,
     alt: string,
     type: string,
@@ -25,7 +26,7 @@ export interface Event {
     ticketLink?: string,
 }
 
-const EventContainer: React.FC<{ event: Event }> = ({ event }) => (
+const EventContainer: React.FC<{ event: Event; onViewDetails?: (event: Event) => void }> = ({ event, onViewDetails }) => (
     <div className='transition duration-300 ease-in-out flex flex-col space-y-2 bg-[#1a0f10] border-3 border-[#483d30] hover:border-[#fff3b0] w-full text-left'>
             <div className='relative'>
                 <img src={event.src} alt={event.alt} className='w-full object-cover' />
@@ -71,7 +72,13 @@ const EventContainer: React.FC<{ event: Event }> = ({ event }) => (
             </div>
             
             <div className='mx-6 mb-6 flex flex-col gap-3 sm:flex-row'>
-                <button className='transition duration-300 ease-in-out text-[#fff3b0] p-2 border border-[#483d30] hover:bg-[#fff3b0] hover:border-[#fff3b0] hover:text-[#1a0f10]'>View Details</button>
+                <button
+                    type='button'
+                    onClick={() => onViewDetails?.(event)}
+                    className='transition duration-300 ease-in-out text-[#fff3b0] p-2 border border-[#483d30] hover:bg-[#fff3b0] hover:border-[#fff3b0] hover:text-[#1a0f10]'
+                >
+                    View Details
+                </button>
                 {event.ticketLink ? (
                     <a
                         href={event.ticketLink}

@@ -1,12 +1,21 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import PageLayout from '../components/pageLayout'
 
 const FriendsPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [friends, setFriends] = React.useState<Array<{name: string; image: string; mutualFriends: number; isFriend: boolean; role: string; location: string}>>([])
   const [selectedChat, setSelectedChat] = React.useState<string | null>(null);
   const [messages, setMessages] = React.useState<Record<string, Array<{text: string, sender: 'user' | 'friend'}>>>({});
+
+  React.useEffect(() => {
+    const chat = searchParams.get('chat');
+    if (chat) {
+      setSelectedChat(chat);
+    }
+  }, [searchParams]);
 
   const handleToggleFriend = (name: string) => {
     setFriends((previousFriends) =>

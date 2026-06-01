@@ -15,25 +15,12 @@ export const getEventsQuery = `
         e.target,
         e.description,
         e.price,
-        COALESCE(u.name, u.username) AS promoter,
-        COALESCE(img.url, '') AS src,
-        COALESCE(img.alt_text, e.title) AS alt,
-        COALESCE(attending.attending_count, 0) AS "attendingCount"
+		e.ticket_link AS "ticketLink",
+		NULL::text AS promoter,
+		''::text AS src,
+		COALESCE(e.title, e.description, 'Event') AS alt,
+		0::int AS "attendingCount"
     FROM events e
-    LEFT JOIN users u ON e.publisher_id = u.id
-    LEFT JOIN LATERAL (
-        SELECT i.url, i.alt_text
-        FROM event_images ei
-        JOIN images i ON i.id = ei.image_id
-        WHERE ei.event_id = e.id
-        ORDER BY ei.is_cover DESC, i.id ASC
-        LIMIT 1
-    ) img ON true
-    LEFT JOIN LATERAL (
-        SELECT COUNT(*)::int AS attending_count
-        FROM application a
-        WHERE a.event_id = e.id
-    ) attending ON true
     ORDER BY e.sdate ASC, e.event_time ASC, e.id ASC
 `;
 
@@ -49,6 +36,7 @@ type CreateEventPayload = {
 	target?: string;
 	description: string;
 	price?: number;
+	ticketLink?: string;
 	imageUrl?: string;
 	imageAlt?: string;
 };
@@ -109,6 +97,10 @@ export async function createEvent(username: string, payload: CreateEventPayload)
 		);
 
 		const eventId = insertedEvent.rows[0].id;
+
+		if (payload.ticketLink) {
+			await client.query('UPDATE events SET ticket_link = $1 WHERE id = $2', [payload.ticketLink, eventId]);
+		}
 
 		if (payload.imageUrl) {
 			const image = await client.query('INSERT INTO images (url, alt_text) VALUES ($1, $2) RETURNING id', [

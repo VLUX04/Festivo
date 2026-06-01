@@ -34,7 +34,7 @@ const CustomerCustomizationPage: React.FC = () => {
     };
 
     return (
-        <PageLayout>
+        <div className='content flex flex-col'>
             <CompleteProfile />
             <Preferences
                 accountType="Event Lover"
@@ -49,7 +49,7 @@ const CustomerCustomizationPage: React.FC = () => {
                 onChange={(prefs) => saveRegistration({ preferences: prefs })}
             />
             <CompleteSetup onClick={handleSubmit} disabled={!isComplete}/>
-        </PageLayout>
+        </div>
     );
 };
 

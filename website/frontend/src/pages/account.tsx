@@ -14,7 +14,7 @@ const AccountCustomizationPage: React.FC = () => {
     };
 
     return (
-        <PageLayout>
+        <div className='content flex flex-col'>
             <CompleteProfile/>
             <h1 className="text-3xl font-bold text-[#fff3b0] text-center mt-8">
                 Choose Your Account Type
@@ -61,7 +61,7 @@ const AccountCustomizationPage: React.FC = () => {
                     </p>
                 </button>
             </div>
-        </PageLayout>
+        </div>
     );
 };
 

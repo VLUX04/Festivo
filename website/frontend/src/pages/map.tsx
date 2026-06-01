@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { useSearchParams } from 'react-router-dom';
 import PageLayout from '../components/pageLayout';
+import EventDetailsModal from '../components/eventDetailsModal';
 import type { Event } from '../components/event';
 import { fetchEvents } from '../utils/events';
 
@@ -39,9 +41,11 @@ const ChangeView: React.FC<ChangeViewProps> = ({ center, zoom }) => {
 const MapPage: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [detailsEvent, setDetailsEvent] = useState<Event | null>(null);
   const [zoom, setZoom] = useState(5);
   const defaultCenter: [number, number] = [41.1579, -8.6291];
   const [error, setError] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     let isMounted = true;
@@ -67,6 +71,21 @@ const MapPage: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const selectedId = searchParams.get('eventId');
+
+    if (!selectedId) {
+      return;
+    }
+
+    const matchedEvent = events.find((event) => String(event.id ?? '') === selectedId);
+
+    if (matchedEvent) {
+      setSelectedEvent(matchedEvent);
+      setZoom(13);
+    }
+  }, [events, searchParams]);
+
   const eventsWithCoords = events.filter((event) =>
     typeof event.latitude === 'number' && typeof event.longitude === 'number',
   );
@@ -74,7 +93,10 @@ const MapPage: React.FC = () => {
   const handleSelectEvent = (event: Event) => {
     setSelectedEvent(event);
     setZoom(13);
+    setSearchParams({ eventId: String(event.id ?? '') });
   }
+
+  const selectedMapEvent = selectedEvent;
 
   return (
     <PageLayout>
@@ -97,8 +119,8 @@ const MapPage: React.FC = () => {
                   zoom={zoom}
                   className="h-full w-full rounded-lg"
                 >
-                  {selectedEvent && selectedEvent.latitude !== undefined && selectedEvent.longitude !== undefined ? (
-                    <ChangeView center={[selectedEvent.latitude, selectedEvent.longitude]} zoom={zoom} />
+                  {selectedMapEvent && selectedMapEvent.latitude !== undefined && selectedMapEvent.longitude !== undefined ? (
+                    <ChangeView center={[selectedMapEvent.latitude, selectedMapEvent.longitude]} zoom={zoom} />
                   ) : null}
                   <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -146,7 +168,10 @@ const MapPage: React.FC = () => {
                           >
                             See on Map
                           </button>
-                          <button className="bg-gray-500 text-white px-4 py-2 rounded-lg">
+                          <button
+                            onClick={() => setDetailsEvent(event)}
+                            className="bg-gray-500 text-white px-4 py-2 rounded-lg"
+                          >
                             See Details
                           </button>
                         </div>
@@ -157,8 +182,38 @@ const MapPage: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {selectedEvent ? (
+            <div className='border-4 border-[#fff3b0] bg-[#1a0f10] p-6'>
+              <div className='flex flex-col gap-4 md:flex-row md:items-center'>
+                <div className='h-28 w-40 overflow-hidden border-2 border-[#483d30] bg-[#120707]'>
+                  <img src={selectedEvent.src} alt={selectedEvent.alt} className='h-full w-full object-cover' />
+                </div>
+                <div className='flex-1'>
+                  <h3 className='text-3xl font-bold text-[#fff3b0]'>{selectedEvent.title}</h3>
+                  <p className='text-[#a89060]'>{selectedEvent.promoter}</p>
+                  <p className='text-[#a89060]'>{selectedEvent.location}</p>
+                  <p className='text-[#a89060]'>{selectedEvent.date} {selectedEvent.time}</p>
+                </div>
+                <div className='flex gap-3'>
+                  <button
+                    type='button'
+                    onClick={() => setDetailsEvent(selectedEvent)}
+                    className='border-2 border-[#fff3b0] bg-[#fff3b0] px-5 py-3 font-bold text-[#540b0e] transition hover:bg-[#1a0f10] hover:text-[#fff3b0]'
+                  >
+                    See Details
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
+      <EventDetailsModal
+        event={detailsEvent}
+        onClose={() => setDetailsEvent(null)}
+        onSeeOnMap={handleSelectEvent}
+      />
     </PageLayout>
   );
 };

@@ -72,7 +72,7 @@ const RegisterPage: React.FC = () => {
   }
 
   return (
-    <PageLayout>
+    <div className='content flex flex-col'>
         <div className='w-[28em] h-auto pt-5 m-7 self-center bg-[#1a0f10] border-3 border-[#fff3b0] text-center flex flex-col shadow-[15px_15px_0_0_#231c16]'>
 		<form onSubmit={handleSubmit}>
             <h1 className='text-5xl font-bold text-[#fff3b0] mt-5'>JOIN FESTIVO</h1>
@@ -112,7 +112,7 @@ const RegisterPage: React.FC = () => {
             </div>
 		</form>
         </div>
-    </PageLayout>
+    </div>
   );
 };
 

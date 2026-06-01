@@ -33,7 +33,7 @@ const PromoterCustomizationPage: React.FC = () => {
     };
 
     return (
-        <PageLayout>
+        <div className='content flex flex-col'>
             <CompleteProfile />
             <Preferences
                 accountType="Promoter"
@@ -45,7 +45,7 @@ const PromoterCustomizationPage: React.FC = () => {
                 }
             />
             <CompleteSetup onClick={handleSubmit} disabled={!isComplete}/>
-        </PageLayout>
+        </div>
     );
 };
 
