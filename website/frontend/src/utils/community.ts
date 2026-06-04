@@ -60,7 +60,7 @@ type CommunityFeedResponse = {
 type ShareableItemType = 'publication' | 'event';
 
 export type FriendContact = {
-  chatId: number;
+  chatId?: number | null;
   username: string;
   name: string;
   role: string;
@@ -311,8 +311,8 @@ export const fetchFriendContacts = async (): Promise<FriendContact[]> => {
   }
 
   try {
-    const data = await requestJson<{ chats: FriendContact[] }>('/chat/friends', { headers });
-    return data.chats || [];
+    const data = await requestJson<{ friends: FriendContact[] }>('/social/friends', { headers });
+    return data.friends || [];
   } catch {
     return [];
   }

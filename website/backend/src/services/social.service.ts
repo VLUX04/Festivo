@@ -271,3 +271,118 @@ export async function followProfessional(username: string, professionalUsername:
 
   return { ok: true as const, message: 'Followed successfully' };
 }
+
+type FriendRow = {
+  friendId: number;
+  username: string;
+  name: string;
+  role: string;
+  chatId: number | null;
+};
+
+export async function listFriends(username: string) {
+  const currentUser = await getUserByUsername(username);
+
+  if (!currentUser) {
+    return { ok: false as const, status: 404, message: 'User not found' };
+  }
+
+  const result = await pool.query(
+    `SELECT
+        u.id AS "friendId",
+        u.username,
+        COALESCE(u.name, u.username) AS name,
+        u.role,
+        c.id AS "chatId"
+     FROM friends f
+     JOIN users u
+       ON u.id = CASE
+         WHEN f.user1_id = $1 THEN f.user2_id
+         ELSE f.user1_id
+       END
+     LEFT JOIN LATERAL (
+        SELECT c.id
+        FROM chat c
+        JOIN chat_participants cp1 ON cp1.chat_id = c.id AND cp1.user_id = $1
+        JOIN chat_participants cp2 ON cp2.chat_id = c.id AND cp2.user_id = u.id
+        LIMIT 1
+     ) c ON TRUE
+     WHERE f.user1_id = $1 OR f.user2_id = $1
+     ORDER BY u.name ASC, u.username ASC`,
+    [currentUser.id],
+  );
+
+  return { ok: true as const, friends: result.rows as FriendRow[] };
+}
+
+export async function searchFriends(username: string, query: string) {
+  const currentUser = await getUserByUsername(username);
+
+  if (!currentUser) {
+    return { ok: false as const, status: 404, message: 'User not found' };
+  }
+
+  const searchTerm = `%${query.trim()}%`;
+
+  const result = await pool.query(
+    `SELECT
+        u.id AS "friendId",
+        u.username,
+        COALESCE(u.name, u.username) AS name,
+        u.role,
+        EXISTS(
+          SELECT 1
+          FROM friends f
+          WHERE (f.user1_id = $1 AND f.user2_id = u.id)
+             OR (f.user2_id = $1 AND f.user1_id = u.id)
+        ) AS "isFriend"
+     FROM users u
+     WHERE u.id <> $1
+       AND u.role = 'customer'
+       AND (
+         u.username ILIKE $2
+         OR u.name ILIKE $2
+       )
+     ORDER BY u.name ASC, u.username ASC
+     LIMIT 20`,
+    [currentUser.id, searchTerm],
+  );
+
+  return { ok: true as const, results: result.rows };
+}
+
+export async function addFriend(username: string, friendUsername: string) {
+  const currentUser = await getUserByUsername(username);
+  const targetUser = await getUserByUsername(friendUsername);
+
+  if (!currentUser || !targetUser) {
+    return { ok: false as const, status: 404, message: 'User not found' };
+  }
+
+  if (currentUser.id === targetUser.id) {
+    return { ok: false as const, status: 400, message: 'You cannot add yourself as a friend' };
+  }
+
+  if (currentUser.role !== 'customer' || targetUser.role !== 'customer') {
+    return { ok: false as const, status: 400, message: 'Friends can only be added between customer accounts' };
+  }
+
+  await pool.query('INSERT INTO customer (customer_id) VALUES ($1) ON CONFLICT DO NOTHING', [currentUser.id]);
+  await pool.query('INSERT INTO customer (customer_id) VALUES ($1) ON CONFLICT DO NOTHING', [targetUser.id]);
+
+  const result = await pool.query(
+    `INSERT INTO friends (user1_id, user2_id)
+     VALUES (LEAST($1::int, $2::int), GREATEST($1::int, $2::int))
+     ON CONFLICT DO NOTHING
+     RETURNING user1_id`,
+    [currentUser.id, targetUser.id],
+  );
+
+  const added = (result.rowCount ?? 0) > 0;
+
+  return {
+    ok: true as const,
+    added,
+    message: added ? 'Friend added successfully' : 'Friend already added',
+  };
+}

@@ -5,10 +5,13 @@ import { loginMiddleware } from '../middleware/auth.middleware.js';
 import { SECRET_KEY } from '../services/auth.service.js';
 import {
   addPublicationComment,
+  addFriend,
   createPublication,
   followProfessional,
   getSocialFeed,
+  listFriends,
   sharePublication,
+  searchFriends,
   togglePublicationFavorite,
   togglePublicationLike,
 } from '../services/social.service.js';
@@ -124,6 +127,53 @@ router.post('/follows', loginMiddleware, async (req: any, res) => {
     }
 
     res.status(200).json({ success: true, message: result.message });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+router.get('/friends', loginMiddleware, async (req: any, res) => {
+  try {
+    const result = await listFriends(req.user.username);
+
+    if (!result.ok) {
+      return res.status(result.status).json({ success: false, message: result.message });
+    }
+
+    res.status(200).json({ success: true, friends: result.friends });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+router.get('/friends/search', loginMiddleware, async (req: any, res) => {
+  try {
+    const query = typeof req.query.q === 'string' ? req.query.q : '';
+    const result = await searchFriends(req.user.username, query);
+
+    if (!result.ok) {
+      return res.status(result.status).json({ success: false, message: result.message });
+    }
+
+    res.status(200).json({ success: true, results: result.results });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+router.post('/friends', loginMiddleware, async (req: any, res) => {
+  try {
+    const { friendUsername } = req.body;
+    const result = await addFriend(req.user.username, friendUsername);
+
+    if (!result.ok) {
+      return res.status(result.status).json({ success: false, message: result.message });
+    }
+
+    res.status(result.added ? 201 : 200).json({ success: true, message: result.message, added: result.added });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: 'Internal server error' });

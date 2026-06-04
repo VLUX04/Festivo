@@ -14,7 +14,17 @@ import {
   type CommunityPost,
   type FriendContact,
 } from '../utils/community.ts';
-import { AUTH_CHANGED_EVENT, isAuthenticated } from '../utils/auth';
+import { AUTH_CHANGED_EVENT, getAuthToken, isAuthenticated } from '../utils/auth';
+
+type FriendSearchResult = {
+  friendId: number;
+  username: string;
+  name: string;
+  role: string;
+  isFriend: boolean;
+};
+
+const API_BASE_URL = 'http://localhost:3000';
 
 const SocialPage: React.FC = () => {
   const { stories, posts } = useCommunityState();
@@ -27,6 +37,11 @@ const SocialPage: React.FC = () => {
   const [selectedVideoId, setSelectedVideoId] = React.useState<number | null>(null);
   const [friendContacts, setFriendContacts] = React.useState<FriendContact[]>([]);
   const [selectedFriendUsername, setSelectedFriendUsername] = React.useState('');
+  const [friendSearchQuery, setFriendSearchQuery] = React.useState('');
+  const [friendSearchResults, setFriendSearchResults] = React.useState<FriendSearchResult[]>([]);
+  const [friendSearchLoading, setFriendSearchLoading] = React.useState(false);
+  const [friendSearchError, setFriendSearchError] = React.useState('');
+  const [addingFriendUsername, setAddingFriendUsername] = React.useState('');
   const [modalCommentDraft, setModalCommentDraft] = React.useState('');
   const videoRefs = React.useRef(new Map<number, HTMLVideoElement | null>());
   const navigate = useNavigate();
@@ -52,6 +67,64 @@ const SocialPage: React.FC = () => {
       setSelectedFriendUsername((current) => current || contacts[0]?.username || '');
     });
   }, []);
+
+  React.useEffect(() => {
+    if (!isLogged) {
+      setFriendSearchLoading(false);
+      setFriendSearchResults([]);
+      setFriendSearchError('');
+      return;
+    }
+
+    const token = getAuthToken();
+    if (!token) {
+      return;
+    }
+
+    const trimmedQuery = friendSearchQuery.trim();
+
+    if (!trimmedQuery) {
+      setFriendSearchLoading(false);
+      setFriendSearchResults([]);
+      setFriendSearchError('');
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      const searchFriends = async () => {
+        try {
+          setFriendSearchLoading(true);
+          setFriendSearchError('');
+
+          const response = await fetch(
+            `${API_BASE_URL}/social/friends/search?q=${encodeURIComponent(trimmedQuery)}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            },
+          );
+
+          const data = await response.json();
+
+          if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Failed to search friends');
+          }
+
+          setFriendSearchResults((data.results || []) as FriendSearchResult[]);
+        } catch (searchError) {
+          setFriendSearchError(searchError instanceof Error ? searchError.message : 'Failed to search friends');
+          setFriendSearchResults([]);
+        } finally {
+          setFriendSearchLoading(false);
+        }
+      };
+
+      void searchFriends();
+    }, 300);
+
+    return () => window.clearTimeout(timeout);
+  }, [friendSearchQuery, isLogged]);
 
   React.useEffect(() => {
     if (!selectedPost) {
@@ -203,6 +276,50 @@ const SocialPage: React.FC = () => {
     await sharePost(selectedPost.id);
 
     await refreshCommunityState();
+  };
+
+  const handleAddFriend = async (friendUsername: string) => {
+    const token = getAuthToken();
+
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      setAddingFriendUsername(friendUsername);
+      setFriendSearchError('');
+
+      const response = await fetch(`${API_BASE_URL}/social/friends`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ friendUsername }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Failed to add friend');
+      }
+
+      setFriendSearchResults((previous) =>
+        previous.map((friend) =>
+          friend.username === friendUsername ? { ...friend, isFriend: true } : friend,
+        ),
+      );
+
+      await fetchFriendContacts().then((contacts) => {
+        setFriendContacts(contacts);
+        setSelectedFriendUsername((current) => current || contacts[0]?.username || '');
+      });
+    } catch (addError) {
+      setFriendSearchError(addError instanceof Error ? addError.message : 'Failed to add friend');
+    } finally {
+      setAddingFriendUsername('');
+    }
   };
 
   return (
@@ -389,6 +506,64 @@ const SocialPage: React.FC = () => {
           </section>
 
           <aside className='space-y-6'>
+            <div className='border-4 border-[#483d30] bg-[#1a0f10] p-6'>
+              <h2 className='text-3xl font-extrabold text-[#f6e8ab]'>Find Friends</h2>
+              <p className='mt-2 text-[#a89060]'>Search people by username or name and add them to your friends list.</p>
+
+              <div className='mt-5 space-y-4'>
+                <input
+                  type='text'
+                  value={friendSearchQuery}
+                  onChange={(event) => setFriendSearchQuery(event.target.value)}
+                  placeholder='Search friends...'
+                  className='w-full border-2 border-[#483d30] bg-[#120707] px-4 py-3 text-[#fff3b0] placeholder-[#7e6a4a] outline-none focus:border-[#fff3b0]'
+                />
+
+                {friendSearchLoading ? (
+                  <div className='border border-[#483d30] bg-[#120707] px-4 py-3 text-[#a89060]'>Searching...</div>
+                ) : null}
+
+                {friendSearchError ? (
+                  <div className='border border-[#ff6b6b] bg-[#120707] px-4 py-3 text-[#ffb3b3]'>
+                    {friendSearchError}
+                  </div>
+                ) : null}
+
+                <div className='space-y-3 max-h-80 overflow-y-auto pr-1'>
+                  {friendSearchQuery.trim() && !friendSearchLoading && friendSearchResults.length === 0 ? (
+                    <p className='text-[#a89060] text-sm'>No matches found.</p>
+                  ) : null}
+
+                  {friendSearchResults.map((friend) => (
+                    <div key={friend.friendId} className='border-2 border-[#483d30] bg-[#120707] p-4'>
+                      <div className='flex items-start justify-between gap-3'>
+                        <div>
+                          <h3 className='text-lg font-bold text-[#fff3b0]'>{friend.name}</h3>
+                          <p className='text-sm text-[#a89060]'>@{friend.username}</p>
+                          <p className='text-xs text-[#8b7355]'>{friend.role}</p>
+                        </div>
+                        <span className='border border-[#483d30] px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-[#a89060]'>
+                          {friend.isFriend ? 'Added' : 'New'}
+                        </span>
+                      </div>
+                      <button
+                        type='button'
+                        onClick={() => void handleAddFriend(friend.username)}
+                        disabled={friend.isFriend || addingFriendUsername === friend.username}
+                        className='mt-4 w-full border-2 border-[#fff3b0] px-4 py-2 font-semibold text-[#fff3b0] transition hover:bg-[#fff3b0] hover:text-[#540b0e] disabled:cursor-not-allowed disabled:border-[#483d30] disabled:text-[#483d30]'
+                      >
+                        {addingFriendUsername === friend.username
+                          ? 'Adding...'
+                          : friend.isFriend
+                            ? 'Already Friends'
+                            : 'Add as Friend'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             <div className='border-4 border-[#483d30] bg-[#1a0f10] p-6'>
               <h2 className='text-3xl font-extrabold text-[#f6e8ab]'>Feed Stats</h2>
               <div className='mt-5 space-y-3'>
