@@ -7,6 +7,7 @@ import chatRoutes from './routes/chat.routes.js';
 import eventRoutes from './routes/event.routes.js';
 import socialRoutes from './routes/social.routes.js';
 import workRoutes from './routes/work.routes.js';
+import { syncSerialSequences } from './db.js';
 
 dotenv.config();
 
@@ -34,4 +35,9 @@ app.get('/', (_req, res) => {
     res.send('Backend is running!');
 });
 
-app.listen(PORT, () => console.log(`Backend running on port ${PORT} (DB host: ${process.env.DB_HOST ?? 'not set'})`));
+const bootstrap = async () => {
+    await syncSerialSequences();
+    app.listen(PORT, () => console.log(`Backend running on port ${PORT} (DB host: ${process.env.DB_HOST ?? 'not set'})`));
+};
+
+void bootstrap();

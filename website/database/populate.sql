@@ -343,5 +343,12 @@ INSERT INTO message (chat_id, sender_id, content, sent_at) VALUES
 ON CONFLICT DO NOTHING;
 
 SELECT setval(pg_get_serial_sequence('users', 'id'), COALESCE(MAX(id), 0) + 1, false) FROM users;
+SELECT setval(pg_get_serial_sequence('events', 'id'), COALESCE(MAX(id), 0) + 1, false) FROM events;
 SELECT setval(pg_get_serial_sequence('images', 'id'), COALESCE(MAX(id), 0) + 1, false) FROM images;
 SELECT setval(pg_get_serial_sequence('chat', 'id'), COALESCE(MAX(id), 0) + 1, false) FROM chat;
+SELECT setval(pg_get_serial_sequence('message', 'id'), COALESCE(MAX(id), 0) + 1, false) FROM message;
+SELECT setval(pg_get_serial_sequence('publication', 'id'), COALESCE(MAX(id), 0) + 1, false) FROM publication;
+SELECT setval(pg_get_serial_sequence('comments', 'id'), COALESCE(MAX(id), 0) + 1, false) FROM comments;
+SELECT setval(pg_get_serial_sequence('stories', 'id'), COALESCE(MAX(id), 0) + 1, false) FROM stories;
+SELECT setval(pg_get_serial_sequence('notifications', 'id'), COALESCE(MAX(id), 0) + 1, false) FROM notifications;
+SELECT setval(pg_get_serial_sequence('work_opportunities', 'id'), COALESCE(MAX(id), 0) + 1, false) FROM work_opportunities;
