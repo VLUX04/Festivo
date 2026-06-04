@@ -1,147 +1,321 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useSearchParams } from 'react-router-dom';
-import PageLayout from '../components/pageLayout'
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import PageLayout from '../components/pageLayout';
+import { getAuthToken, getStoredUser, isAuthenticated } from '../utils/auth';
+
+const API_BASE_URL = 'http://localhost:3000';
+
+type FriendChat = {
+  chatId: number;
+  username: string;
+  name: string;
+  role: string;
+};
+
+type ChatMessage = {
+  id: number;
+  content: string;
+  sent_at: string;
+  username: string;
+  name: string | null;
+};
+
+type SharePayload = {
+  kind: 'share';
+  itemType: string;
+  itemId: number;
+  title: string;
+  url: string;
+  body?: string;
+};
+
+const isSharePayload = (value: unknown): value is SharePayload => {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const payload = value as Record<string, unknown>;
+  return (
+    payload.kind === 'share' &&
+    typeof payload.itemType === 'string' &&
+    typeof payload.itemId === 'number' &&
+    typeof payload.title === 'string' &&
+    typeof payload.url === 'string'
+  );
+};
+
+const parseSharePayload = (content: string): SharePayload | null => {
+  try {
+    const parsed = JSON.parse(content) as unknown;
+    return isSharePayload(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+const formatRole = (role: string): string => {
+  if (role === 'professional') {
+    return 'Professional';
+  }
+
+  if (role === 'customer') {
+    return 'Customer';
+  }
+
+  return role;
+};
+
+const initial = (value: string): string => value.trim().charAt(0).toUpperCase() || '?';
 
 const FriendsPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [friends, setFriends] = React.useState<Array<{name: string; image: string; mutualFriends: number; isFriend: boolean; role: string; location: string}>>([])
-  const [selectedChat, setSelectedChat] = React.useState<string | null>(null);
-  const [messages, setMessages] = React.useState<Record<string, Array<{text: string, sender: 'user' | 'friend'}>>>({});
+
+  const loggedIn = isAuthenticated();
+  const currentUser = React.useMemo(() => getStoredUser(), []);
+
+  const [friendChats, setFriendChats] = React.useState<FriendChat[]>([]);
+  const [selectedChatId, setSelectedChatId] = React.useState<number | null>(null);
+  const [messages, setMessages] = React.useState<ChatMessage[]>([]);
+
+  const [loadingFriends, setLoadingFriends] = React.useState(true);
+  const [loadingMessages, setLoadingMessages] = React.useState(false);
+  const [sending, setSending] = React.useState(false);
+
+  const [error, setError] = React.useState('');
+  const [draft, setDraft] = React.useState('');
+
+  const selectedChat = React.useMemo(() => {
+    if (!selectedChatId) {
+      return null;
+    }
+
+    return friendChats.find((chat) => chat.chatId === selectedChatId) ?? null;
+  }, [friendChats, selectedChatId]);
 
   React.useEffect(() => {
-    const chat = searchParams.get('chat');
-    if (chat) {
-      setSelectedChat(chat);
+    if (!loggedIn) {
+      navigate('/login');
     }
-  }, [searchParams]);
+  }, [loggedIn, navigate]);
 
-  const handleToggleFriend = (name: string) => {
-    setFriends((previousFriends) =>
-      previousFriends.map((friend) =>
-        friend.name === name ? { ...friend, isFriend: !friend.isFriend } : friend,
-      ),
-    )
+  const loadFriends = React.useCallback(async () => {
+    const token = getAuthToken();
+
+    if (!token) {
+      return;
+    }
+
+    try {
+      setLoadingFriends(true);
+      setError('');
+
+      const response = await fetch(`${API_BASE_URL}/chat/friends`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Failed to load friends');
+      }
+
+      setFriendChats(data.chats as FriendChat[]);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Failed to load friends');
+    } finally {
+      setLoadingFriends(false);
+    }
+  }, []);
+
+  const loadMessages = React.useCallback(async (chatId: number) => {
+    const token = getAuthToken();
+
+    if (!token) {
+      return;
+    }
+
+    try {
+      setLoadingMessages(true);
+      setError('');
+
+      const response = await fetch(`${API_BASE_URL}/chat/messages/${chatId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Failed to load messages');
+      }
+
+      setMessages(data.messages as ChatMessage[]);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Failed to load messages');
+      setMessages([]);
+    } finally {
+      setLoadingMessages(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    void loadFriends();
+  }, [loadFriends]);
+
+  React.useEffect(() => {
+    if (!selectedChatId) {
+      setMessages([]);
+      return;
+    }
+
+    void loadMessages(selectedChatId);
+  }, [selectedChatId, loadMessages]);
+
+  React.useEffect(() => {
+    const targetUsername = searchParams.get('chat');
+
+    if (!targetUsername || friendChats.length === 0) {
+      return;
+    }
+
+    const matchedChat = friendChats.find((chat) => chat.username === targetUsername);
+
+    if (matchedChat) {
+      setSelectedChatId(matchedChat.chatId);
+      return;
+    }
+
+    const token = getAuthToken();
+
+    if (!token) {
+      return;
+    }
+
+    const ensureChat = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/chat/initiate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ friendUsername: targetUsername }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || 'Unable to open chat');
+        }
+
+        await loadFriends();
+      } catch (chatError) {
+        setError(chatError instanceof Error ? chatError.message : 'Unable to open chat');
+      }
+    };
+
+    void ensureChat();
+  }, [friendChats, loadFriends, searchParams]);
+
+  const handleSendMessage = async () => {
+    if (!selectedChatId || !draft.trim()) {
+      return;
+    }
+
+    const token = getAuthToken();
+
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      setSending(true);
+      setError('');
+
+      const response = await fetch(`${API_BASE_URL}/chat/send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          chatId: String(selectedChatId),
+          content: draft.trim(),
+        }),
+      });
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Failed to send message');
+      }
+
+      setDraft('');
+      await loadMessages(selectedChatId);
+    } catch (sendError) {
+      setError(sendError instanceof Error ? sendError.message : 'Failed to send message');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (!loggedIn) {
+    return null;
   }
-
-  const handleViewProfile = (friendName: string) => {
-    navigate(`/profile?friend=${friendName}`);
-  }
-
-  const handleSendMessage = (friendName: string, text: string) => {
-    if (!text.trim()) return;
-    
-    setMessages((prev) => ({
-      ...prev,
-      [friendName]: [...(prev[friendName] || []), { text, sender: 'user' }],
-    }));
-  }
-
-  const currentFriends = friends.filter((friend) => friend.isFriend)
-  const notFriends = friends.filter((friend) => !friend.isFriend)
-  
-  const userLocation = '';
-  const recommendedFriends = notFriends
-    .filter((friend) => friend.location === userLocation && friend.mutualFriends > 0)
-    .sort((a, b) => b.mutualFriends - a.mutualFriends)
-    .slice(0, 5);
-
-  const chatMessages = selectedChat ? messages[selectedChat] || [] : [];
 
   return (
     <PageLayout>
       <div className='w-full p-4 space-y-6 flex flex-col items-center mt-6'>
         <div className='w-[82%] border-4 border-[#fff3b0] bg-[#1a0f10] p-8 mb-8'>
-            <h1 className='text-[#fff3b0] text-5xl font-bold mb-6'>FRIENDS & COMMUNITY</h1>
-            <p className='text-[#a89060] text-xl'>Connect with friends and discover who's attending events near you.</p>
+          <h1 className='text-[#fff3b0] text-5xl font-bold mb-6'>FRIENDS & COMMUNITY</h1>
+          <p className='text-[#a89060] text-xl'>Real-time conversations with your existing connections.</p>
         </div>
+
+        {error ? (
+          <div className='w-[82%] border-2 border-[#ff6b6b] bg-[#1a0f10] p-4 text-[#ffb3b3]'>
+            {error}
+          </div>
+        ) : null}
 
         <div className='w-[82%] flex gap-6 mb-8'>
           <div className='w-1/3 space-y-6'>
             <div className='border-4 border-[#fff3b0] bg-[#1a0f10] p-6'>
               <h2 className='text-[#fff3b0] text-xl font-bold mb-4'>Your Friends</h2>
-              <div className='space-y-3 max-h-72 overflow-y-auto'>
-                {currentFriends.length === 0 ? (
-                  <p className='text-[#a89060]'>No friends yet</p>
+              <div className='space-y-3 max-h-96 overflow-y-auto'>
+                {loadingFriends ? (
+                  <p className='text-[#a89060]'>Loading friends...</p>
+                ) : friendChats.length === 0 ? (
+                  <p className='text-[#a89060]'>No active chats yet</p>
                 ) : (
-                  currentFriends.map((friend) => (
-                    <div 
-                      key={friend.name}
-                      className='bg-[#2a1f20] border-2 border-[#483d30] hover:border-[#fff3b0] transition p-3 cursor-pointer'
+                  friendChats.map((friend) => (
+                    <div
+                      key={`${friend.chatId}-${friend.username}`}
+                      className={`bg-[#2a1f20] border-2 transition p-3 cursor-pointer ${selectedChatId === friend.chatId ? 'border-[#fff3b0]' : 'border-[#483d30] hover:border-[#fff3b0]'}`}
+                      onClick={() => setSelectedChatId(friend.chatId)}
                     >
                       <div className='flex gap-3 items-start mb-2'>
-                        <img
-                          src={friend.image}
-                          alt={friend.name}
-                          onClick={() => handleViewProfile(friend.name)}
-                          className='w-12 h-12 object-cover border border-[#483d30] flex-shrink-0 hover:border-[#fff3b0] transition'
-                        />
-                        <div className='flex-1 min-w-0'>
-                          <p 
-                            onClick={() => handleViewProfile(friend.name)}
-                            className='text-[#fff3b0] font-bold text-sm hover:underline cursor-pointer truncate'
-                          >
-                            {friend.name}
-                          </p>
-                          <p className='text-[#a89060] text-xs'>{friend.role}</p>
-                          <p className='text-[#8b7355] text-xs'>{friend.mutualFriends} mutual friends</p>
+                        <div
+                          className='w-12 h-12 border border-[#483d30] flex-shrink-0 flex items-center justify-center text-[#fff3b0] bg-[#120707] font-bold'
+                          aria-hidden='true'
+                        >
+                          {initial(friend.name || friend.username)}
                         </div>
-                      </div>
-                      <div className='flex gap-2'>
-                        <button
-                          onClick={() => setSelectedChat(friend.name)}
-                          className='flex-1 border border-[#fff3b0] text-[#fff3b0] text-xs py-1 hover:bg-[#3d2d24] transition'
-                        >
-                          Message
-                        </button>
-                        <button
-                          onClick={() => handleToggleFriend(friend.name)}
-                          className='flex-1 border border-[#ff6b6b] text-[#ff6b6b] text-xs py-1 hover:bg-[#3d2d24] transition'
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            <div className='border-4 border-[#fff3b0] bg-[#1a0f10] p-6'>
-              <h2 className='text-[#fff3b0] text-xl font-bold mb-4'>Recommended</h2>
-              <div className='space-y-3 max-h-72 overflow-y-auto'>
-                {recommendedFriends.length === 0 ? (
-                  <p className='text-[#a89060] text-sm'>No recommendations available</p>
-                ) : (
-                  recommendedFriends.map((friend) => (
-                    <div 
-                      key={friend.name}
-                      className='bg-[#2a1f20] border-2 border-[#483d30] hover:border-[#fff3b0] transition p-3 cursor-pointer'
-                    >
-                      <div className='flex gap-3 items-start mb-2'>
-                        <img
-                          src={friend.image}
-                          alt={friend.name}
-                          onClick={() => handleViewProfile(friend.name)}
-                          className='w-12 h-12 object-cover border border-[#483d30] flex-shrink-0 hover:border-[#fff3b0] transition'
-                        />
                         <div className='flex-1 min-w-0'>
-                          <p 
-                            onClick={() => handleViewProfile(friend.name)}
-                            className='text-[#fff3b0] font-bold text-sm hover:underline cursor-pointer truncate'
-                          >
-                            {friend.name}
-                          </p>
-                          <p className='text-[#a89060] text-xs'>{friend.role}</p>
-                          <p className='text-[#8b7355] text-xs'>{friend.mutualFriends} mutual friends</p>
+                          <p className='text-[#fff3b0] font-bold text-sm truncate'>{friend.name}</p>
+                          <p className='text-[#a89060] text-xs'>@{friend.username}</p>
+                          <p className='text-[#8b7355] text-xs'>{formatRole(friend.role)}</p>
                         </div>
                       </div>
                       <button
-                        onClick={() => handleToggleFriend(friend.name)}
-                        className='w-full border-2 border-[#fff3b0] text-[#fff3b0] text-xs py-1 hover:bg-[#2d1d14] transition'
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setSelectedChatId(friend.chatId);
+                        }}
+                        className='w-full border border-[#fff3b0] text-[#fff3b0] text-xs py-1 hover:bg-[#3d2d24] transition'
                       >
-                        Add Friend
+                        Message
                       </button>
                     </div>
                   ))
@@ -150,49 +324,79 @@ const FriendsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className='w-2/3 border-4 border-[#fff3b0] bg-[#1a0f10] p-6 flex flex-col '>
+          <div className='w-2/3 border-4 border-[#fff3b0] bg-[#1a0f10] p-6 flex flex-col'>
             <h2 className='text-[#fff3b0] text-2xl font-bold mb-4'>Messages</h2>
-            
+
             {selectedChat ? (
               <div className='flex flex-col h-full mt-auto'>
                 <div className='mb-4 pb-4 border-b border-[#483d30]'>
-                  <button 
-                    onClick={() => setSelectedChat(null)}
+                  <button
+                    onClick={() => setSelectedChatId(null)}
                     className='text-[#a89060] hover:text-[#fff3b0] transition'
                   >
                     ← Back to friends
                   </button>
-                  <h3 className='text-[#fff3b0] text-xl font-bold mt-2'>{selectedChat}</h3>
+                  <h3 className='text-[#fff3b0] text-xl font-bold mt-2'>{selectedChat.name}</h3>
+                  <p className='text-[#a89060]'>@{selectedChat.username}</p>
                 </div>
-                
+
                 <div className='flex-1 overflow-y-auto mb-4 space-y-2'>
-                  {chatMessages.length === 0 ? (
+                  {loadingMessages ? (
+                    <p className='text-[#a89060] text-center mt-8'>Loading messages...</p>
+                  ) : messages.length === 0 ? (
                     <p className='text-[#a89060] text-center mt-8'>No messages yet. Start a conversation!</p>
                   ) : (
-                    chatMessages.map((msg, idx) => (
-                      <div key={idx} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-xs px-4 py-2 rounded ${msg.sender === 'user' ? 'bg-[#e3a63e]' : 'bg-[#483d30]'} text-[#1a0f10]`}>
-                          {msg.text}
+                    messages.map((message) => {
+                      const fromCurrentUser = message.username === currentUser?.username;
+                      const sharedPayload = parseSharePayload(message.content);
+
+                      return (
+                        <div key={message.id} className={`flex ${fromCurrentUser ? 'justify-end' : 'justify-start'}`}>
+                          <div
+                            className={`max-w-xs px-4 py-2 rounded ${fromCurrentUser ? 'bg-[#e3a63e] text-[#1a0f10]' : 'bg-[#483d30] text-[#fff3b0]'}`}
+                          >
+                            {sharedPayload ? (
+                              <>
+                                <p className='text-xs uppercase tracking-[0.2em] font-semibold'>
+                                  Shared {sharedPayload.itemType}
+                                </p>
+                                <p className='mt-1 font-bold'>{sharedPayload.title}</p>
+                                {sharedPayload.body ? <p className='mt-1'>{sharedPayload.body}</p> : null}
+                              </>
+                            ) : (
+                              <p>{message.content}</p>
+                            )}
+                            <p className='text-[10px] mt-1 opacity-80'>
+                              {new Date(message.sent_at).toLocaleString()}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
-                
+
                 <div className='flex gap-2'>
-                  <input 
+                  <input
                     type='text'
+                    value={draft}
                     placeholder='Type a message...'
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && e.currentTarget.value) {
-                        handleSendMessage(selectedChat, e.currentTarget.value);
-                        e.currentTarget.value = '';
+                    onChange={(event) => setDraft(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        void handleSendMessage();
                       }
                     }}
                     className='flex-1 px-3 py-2 bg-[#2a1f20] border border-[#a89060] text-[#fff3b0] placeholder-[#8b7355] focus:outline-none'
                   />
-                  <button className='px-4 py-2 border-2 border-[#fff3b0] text-[#fff3b0] hover:bg-[#2d1d14] transition'>
-                    Send
+                  <button
+                    type='button'
+                    disabled={sending || !draft.trim()}
+                    onClick={() => void handleSendMessage()}
+                    className='px-4 py-2 border-2 border-[#fff3b0] text-[#fff3b0] hover:bg-[#2d1d14] transition disabled:opacity-50 disabled:cursor-not-allowed'
+                  >
+                    {sending ? 'Sending...' : 'Send'}
                   </button>
                 </div>
               </div>
