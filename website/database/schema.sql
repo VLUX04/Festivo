@@ -127,6 +127,7 @@ CREATE TABLE publication (
     id SERIAL PRIMARY KEY,
     user_id INT,
     media VARCHAR(255),
+    media_type VARCHAR(20) NOT NULL DEFAULT 'image',
     publish_date DATE,
     information TEXT,
     location VARCHAR(255),

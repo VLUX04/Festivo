@@ -1,4 +1,3 @@
-import PageLayout from "../components/pageLayout";
 import CompleteProfile from "../components/completeProfile";
 import Preferences from "../components/preferences";
 import StyleBadge from "../components/styleBadge";
@@ -34,7 +33,7 @@ const ArtistCustomizationPage: React.FC = () => {
     };
 
     return (
-        <div className='content flex flex-col'>
+        <div className='mx-auto flex w-[82%] flex-col items-center gap-8 py-8'>
             <CompleteProfile />
             <Preferences
                 accountType="Artist"

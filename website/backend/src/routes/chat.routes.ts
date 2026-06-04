@@ -52,6 +52,42 @@ router.post('/send', loginMiddleware, async (req: any, res) => {
 	}
 });
 
+router.post('/share', loginMiddleware, async (req: any, res) => {
+	try {
+		const { friendUsername, itemType, itemId, title, url, body } = req.body;
+
+		if (!friendUsername || !itemType || !itemId || !title || !url) {
+			return res.status(400).json({ success: false, message: 'Missing share data' });
+		}
+
+		const chatResult = await initiateChat(req.user.username, friendUsername);
+
+		if (!chatResult.ok) {
+			return res.status(chatResult.status).json({ success: false, message: chatResult.message });
+		}
+
+		const content = JSON.stringify({
+			kind: 'share',
+			itemType,
+			itemId,
+			title,
+			url,
+			body: body || '',
+		});
+
+		const sendResult = await sendChatMessage(req.user.username, String(chatResult.chatId), content);
+
+		if (!sendResult.ok) {
+			return res.status(sendResult.status).json({ success: false, message: sendResult.message });
+		}
+
+		res.status(201).json({ success: true, chatId: chatResult.chatId, message: 'Shared successfully' });
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({ success: false, message: 'Internal server error' });
+	}
+});
+
 router.get('/friends', loginMiddleware, async (req: any, res) => {
 	try {
 		const result = await getFriendChats(req.user.username);

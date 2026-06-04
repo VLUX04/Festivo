@@ -82,7 +82,8 @@ const MapPage: React.FC = () => {
 
     if (matchedEvent) {
       setSelectedEvent(matchedEvent);
-      setZoom(13);
+      setDetailsEvent(null);
+      setZoom(14);
     }
   }, [events, searchParams]);
 
@@ -92,7 +93,8 @@ const MapPage: React.FC = () => {
 
   const handleSelectEvent = (event: Event) => {
     setSelectedEvent(event);
-    setZoom(13);
+    setDetailsEvent(null);
+    setZoom(14);
     setSearchParams({ eventId: String(event.id ?? '') });
   }
 

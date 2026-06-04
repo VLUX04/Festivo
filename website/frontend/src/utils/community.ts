@@ -3,15 +3,6 @@ import { AUTH_CHANGED_EVENT, getAuthToken, getStoredUser } from './auth';
 
 const API_BASE_URL = 'http://localhost:3000';
 
-export type CommunityNotification = {
-  id: number;
-  kind: 'follow' | 'like' | 'comment' | 'share' | 'favorite';
-  title: string;
-  message: string;
-  timestamp: string;
-  read: boolean;
-};
-
 export type CommunityComment = {
   id: number;
   author: string;
@@ -24,6 +15,7 @@ export type CommunityPost = {
   author: string;
   avatar: string;
   image: string;
+  mediaType: 'image' | 'video';
   caption: string;
   location: string;
   likes: number;
@@ -56,15 +48,32 @@ export type AttendedEvent = {
 export type CommunityState = {
   stories: CommunityStory[];
   posts: CommunityPost[];
-  notifications: CommunityNotification[];
   attendedEvents: AttendedEvent[];
 };
 
 type CommunityFeedResponse = {
   stories: CommunityStory[];
   posts: Array<CommunityPost & { comments: CommunityComment[] | string }>; 
-  notifications: CommunityNotification[];
   attendedEvents: AttendedEvent[];
+};
+
+type ShareableItemType = 'publication' | 'event';
+
+export type FriendContact = {
+  chatId: number;
+  username: string;
+  name: string;
+  role: string;
+};
+
+const inferMediaType = (mediaUrl: string): 'image' | 'video' => {
+  const lowered = mediaUrl.toLowerCase();
+
+  if (lowered.endsWith('.mp4') || lowered.endsWith('.webm') || lowered.endsWith('.ogg')) {
+    return 'video';
+  }
+
+  return 'image';
 };
 
 const seedState = (): CommunityState => ({
@@ -97,6 +106,7 @@ const seedState = (): CommunityState => ({
       author: getStoredUser()?.name || getStoredUser()?.username || 'You',
       avatar: 'https://picsum.photos/seed/post-avatar-1/120/120',
       image: 'https://picsum.photos/seed/post-1/900/800',
+      mediaType: 'image',
       caption: 'Golden lights, loud drums, and the best crowd I have seen all year.',
       location: 'Porto, Portugal',
       likes: 142,
@@ -120,6 +130,7 @@ const seedState = (): CommunityState => ({
       author: 'Luna Stage',
       avatar: 'https://picsum.photos/seed/post-avatar-2/120/120',
       image: 'https://picsum.photos/seed/post-2/900/800',
+      mediaType: 'image',
       caption: 'Soundcheck finished. The crowd is in for a long night.',
       location: 'Lisbon, Portugal',
       likes: 87,
@@ -136,6 +147,7 @@ const seedState = (): CommunityState => ({
       author: 'Atlas Collective',
       avatar: 'https://picsum.photos/seed/post-avatar-3/120/120',
       image: 'https://picsum.photos/seed/post-3/900/800',
+      mediaType: 'image',
       caption: 'New mural, new music, same old city magic.',
       location: 'Coimbra, Portugal',
       likes: 64,
@@ -153,24 +165,6 @@ const seedState = (): CommunityState => ({
       favoritedByMe: false,
       sharedByMe: false,
       isMine: false,
-    },
-  ],
-  notifications: [
-    {
-      id: 1,
-      kind: 'follow',
-      title: 'New follower',
-      message: 'Sofia Martins started following you.',
-      timestamp: new Date().toISOString(),
-      read: false,
-    },
-    {
-      id: 2,
-      kind: 'like',
-      title: 'New like',
-      message: 'Ana Ribeiro liked "Golden lights, loud drums, and the best crowd I have seen all year.".',
-      timestamp: new Date().toISOString(),
-      read: false,
     },
   ],
   attendedEvents: [
@@ -204,7 +198,6 @@ const seedState = (): CommunityState => ({
 export const emptyCommunityState: CommunityState = {
   stories: [],
   posts: [],
-  notifications: [],
   attendedEvents: [],
 };
 
@@ -247,9 +240,9 @@ const normalizeFeed = (feed: CommunityFeedResponse): CommunityState => ({
   stories: feed.stories || [],
   posts: (feed.posts || []).map((post) => ({
     ...post,
+    mediaType: post.mediaType || inferMediaType(post.image),
     comments: Array.isArray(post.comments) ? post.comments : [],
   })),
-  notifications: feed.notifications || [],
   attendedEvents: feed.attendedEvents || [],
 });
 
@@ -273,13 +266,6 @@ const updatePostOptimistically = (postId: number, updater: (post: CommunityPost)
   setCurrentState({
     ...currentState,
     posts: currentState.posts.map((post) => (post.id === postId ? updater(post) : post)),
-  });
-};
-
-const updateNotificationOptimistically = (updater: (notifications: CommunityNotification[]) => CommunityNotification[]): void => {
-  setCurrentState({
-    ...currentState,
-    notifications: updater(currentState.notifications),
   });
 };
 
@@ -317,73 +303,28 @@ export const useCommunityState = (): CommunityState => {
 
 export const refreshCommunityState = (): Promise<void> => loadFeedFromServer();
 
-export const markAllNotificationsRead = (): void => {
-  updateNotificationOptimistically((notifications) => notifications.map((notification) => ({ ...notification, read: true })));
-
-  const headers = authHeaders();
-  if (!headers) {
-    return;
-  }
-
-  void requestJson('/social/notifications/read-all', {
-    method: 'POST',
-    headers: {
-      ...headers,
-      'Content-Type': 'application/json',
-    },
-  }).catch(() => undefined);
-};
-
-export const clearNotifications = (): void => {
-  updateNotificationOptimistically(() => []);
-
-  const headers = authHeaders();
-  if (!headers) {
-    return;
-  }
-
-  void requestJson('/social/notifications', {
-    method: 'DELETE',
-    headers,
-  }).catch(() => undefined);
-};
-
-export const simulateIncomingFollow = (professionalUsername: string): void => {
+export const fetchFriendContacts = async (): Promise<FriendContact[]> => {
   const headers = authHeaders();
 
   if (!headers) {
-    return;
+    return [];
   }
 
-  void requestJson('/social/follows', {
-    method: 'POST',
-    headers: {
-      ...headers,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ professionalUsername }),
-  })
-    .then(() => loadFeedFromServer())
-    .catch(() => undefined);
-};
-
-export const simulateIncomingLike = (postTitle: string, likerName: string): void => {
-  const actorLabel = likerName.trim();
-  const targetPost = currentState.posts.find((post) => post.caption === postTitle) || currentState.posts.find((post) => !post.isMine) || currentState.posts[0];
-
-  if (!targetPost || !actorLabel) {
-    return;
+  try {
+    const data = await requestJson<{ chats: FriendContact[] }>('/chat/friends', { headers });
+    return data.chats || [];
+  } catch {
+    return [];
   }
-
-  void togglePostLike(targetPost.id);
 };
 
-export const createPost = (payload: { caption: string; image: string; location?: string }): void => {
+export const createPost = (payload: { caption: string; image: string; location?: string; mediaType?: 'image' | 'video' }): void => {
   const optimisticPost: CommunityPost = {
     id: Date.now(),
     author: getStoredUser()?.name || getStoredUser()?.username || 'You',
     avatar: `https://picsum.photos/seed/user-${Date.now()}/120/120`,
     image: payload.image,
+    mediaType: payload.mediaType || inferMediaType(payload.image),
     caption: payload.caption,
     location: payload.location || 'My feed',
     likes: 0,
@@ -472,7 +413,7 @@ export const togglePostFavorite = (postId: number): void => {
     .catch(() => undefined);
 };
 
-export const sharePost = (postId: number): void => {
+export const sharePost = (postId: number): Promise<void> => {
   updatePostOptimistically(postId, (entry) => ({
     ...entry,
     shares: entry.shares + 1,
@@ -481,10 +422,10 @@ export const sharePost = (postId: number): void => {
 
   const headers = authHeaders();
   if (!headers) {
-    return;
+    return Promise.resolve();
   }
 
-  void requestJson(`/social/publications/${postId}/share`, {
+  return requestJson(`/social/publications/${postId}/share`, {
     method: 'POST',
     headers,
   })
@@ -529,8 +470,27 @@ export const addCommentToPost = (postId: number, body: string): void => {
     .catch(() => undefined);
 };
 
-export const getNotificationCount = (state: CommunityState): number =>
-  state.notifications.filter((notification) => !notification.read).length;
+export const shareItemWithFriend = (payload: {
+  friendUsername: string;
+  itemType: ShareableItemType;
+  itemId: number;
+  title: string;
+  url: string;
+  body?: string;
+}): Promise<void> => {
+  const headers = authHeaders();
 
-export const getNotificationPreview = (state: CommunityState): CommunityNotification[] =>
-  state.notifications.slice(0, 5);
+  if (!headers) {
+    return Promise.resolve();
+  }
+
+  return requestJson('/chat/share', {
+    method: 'POST',
+    headers: {
+      ...headers,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  }).then(() => undefined);
+};
+

@@ -5,12 +5,9 @@ import { loginMiddleware } from '../middleware/auth.middleware.js';
 import { SECRET_KEY } from '../services/auth.service.js';
 import {
   addPublicationComment,
-  clearNotifications,
   createPublication,
   followProfessional,
   getSocialFeed,
-  markAllNotificationsRead,
-  markNotificationRead,
   sharePublication,
   togglePublicationFavorite,
   togglePublicationLike,
@@ -127,51 +124,6 @@ router.post('/follows', loginMiddleware, async (req: any, res) => {
     }
 
     res.status(200).json({ success: true, message: result.message });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
-  }
-});
-
-router.post('/notifications/:id/read', loginMiddleware, async (req: any, res) => {
-  try {
-    const result = await markNotificationRead(req.user.username, Number(req.params.id));
-
-    if (!result.ok) {
-      return res.status(result.status).json({ success: false, message: result.message });
-    }
-
-    res.status(200).json({ success: true });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
-  }
-});
-
-router.post('/notifications/read-all', loginMiddleware, async (req: any, res) => {
-  try {
-    const result = await markAllNotificationsRead(req.user.username);
-
-    if (!result.ok) {
-      return res.status(result.status).json({ success: false, message: result.message });
-    }
-
-    res.status(200).json({ success: true });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
-  }
-});
-
-router.delete('/notifications', loginMiddleware, async (req: any, res) => {
-  try {
-    const result = await clearNotifications(req.user.username);
-
-    if (!result.ok) {
-      return res.status(result.status).json({ success: false, message: result.message });
-    }
-
-    res.status(200).json({ success: true });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: 'Internal server error' });

@@ -5,6 +5,7 @@ type PublicationPayload = {
   caption: string;
   image: string;
   location?: string;
+  mediaType?: 'image' | 'video';
 };
 
 const publicationCommentsQuery = `
@@ -48,6 +49,10 @@ export async function getSocialFeed(username?: string) {
         COALESCE(u.name, u.username) AS author,
         ('https://picsum.photos/seed/user-' || u.id || '/120/120') AS avatar,
         p.media AS image,
+        COALESCE(p.media_type, CASE
+          WHEN p.media ~* '\\.(mp4|webm|ogg)(\\?.*)?$' THEN 'video'
+          ELSE 'image'
+        END) AS "mediaType",
         p.information AS caption,
         COALESCE(p.location, 'Festivo Feed') AS location,
         p.likes,
@@ -66,22 +71,6 @@ export async function getSocialFeed(username?: string) {
      ORDER BY p.publish_date DESC, p.id DESC`,
     [viewerId],
   );
-
-  const notifications = viewerId
-    ? await pool.query(
-    `SELECT
-        id,
-        kind,
-        title,
-        message,
-        is_read AS "read",
-        created_at AS timestamp
-     FROM notifications
-     WHERE recipient_user_id = $1
-     ORDER BY created_at DESC, id DESC`,
-    [viewerId],
-  )
-    : { rows: [] };
 
   const attendedEvents = viewerId
     ? await pool.query(
@@ -116,7 +105,6 @@ export async function getSocialFeed(username?: string) {
         ...post,
         comments: Array.isArray(post.comments) ? post.comments : [],
       })),
-      notifications: notifications.rows,
       attendedEvents: attendedEvents.rows,
     },
   };
@@ -134,10 +122,10 @@ export async function createPublication(username: string, payload: PublicationPa
   }
 
   const result = await pool.query(
-    `INSERT INTO publication (user_id, media, publish_date, information, location)
-     VALUES ($1, $2, NOW(), $3, $4)
+    `INSERT INTO publication (user_id, media, media_type, publish_date, information, location)
+     VALUES ($1, $2, $3, NOW(), $4, $5)
      RETURNING id`,
-    [currentUser.id, payload.image, payload.caption.trim(), payload.location?.trim() || 'Festivo Feed'],
+    [currentUser.id, payload.image, payload.mediaType || 'image', payload.caption.trim(), payload.location?.trim() || 'Festivo Feed'],
   );
 
   return { ok: true as const, publicationId: result.rows[0].id };
@@ -186,19 +174,6 @@ export async function togglePublicationLike(username: string, publicationId: num
 
     await client.query('UPDATE publication_reactions SET liked = $1 WHERE publication_id = $2 AND user_id = $3', [nextLiked, publicationId, currentUser.id]);
     await client.query('UPDATE publication SET likes = GREATEST(0, likes + $1) WHERE id = $2', [nextLiked ? 1 : -1, publicationId]);
-
-    if (nextLiked && publication.rows[0].user_id !== currentUser.id) {
-      await client.query(
-        `INSERT INTO notifications (recipient_user_id, actor_user_id, kind, title, message, publication_id)
-         VALUES ($1, $2, 'like', 'New like', $3, $4)`,
-        [
-          publication.rows[0].user_id,
-          currentUser.id,
-          `${currentUser.name || currentUser.username} liked "${publication.rows[0].information}".`,
-          publicationId,
-        ],
-      );
-    }
 
     await client.query('COMMIT');
     return { ok: true as const, liked: nextLiked };
@@ -267,19 +242,6 @@ export async function addPublicationComment(username: string, publicationId: num
     [publicationId, currentUser.id, body.trim()],
   );
 
-  if (publication.rows[0].user_id !== currentUser.id) {
-    await pool.query(
-      `INSERT INTO notifications (recipient_user_id, actor_user_id, kind, title, message, publication_id)
-       VALUES ($1, $2, 'comment', 'New comment', $3, $4)`,
-      [
-        publication.rows[0].user_id,
-        currentUser.id,
-        `${currentUser.name || currentUser.username} commented on "${publication.rows[0].information}".`,
-        publicationId,
-      ],
-    );
-  }
-
   return { ok: true as const, comment: comment.rows[0] };
 }
 
@@ -307,46 +269,5 @@ export async function followProfessional(username: string, professionalUsername:
     [currentUser.id, targetUser.id],
   );
 
-  if (followResult.rows.length > 0) {
-    await pool.query(
-      `INSERT INTO notifications (recipient_user_id, actor_user_id, kind, title, message)
-       VALUES ($1, $2, 'follow', 'New follower', $3)`,
-      [targetUser.id, currentUser.id, `${currentUser.name || currentUser.username} started following you.`],
-    );
-  }
-
   return { ok: true as const, message: 'Followed successfully' };
-}
-
-export async function markNotificationRead(username: string, notificationId: number) {
-  const currentUser = await getUserByUsername(username);
-
-  if (!currentUser) {
-    return { ok: false as const, status: 404, message: 'User not found' };
-  }
-
-  await pool.query('UPDATE notifications SET is_read = TRUE WHERE id = $1 AND recipient_user_id = $2', [notificationId, currentUser.id]);
-  return { ok: true as const };
-}
-
-export async function markAllNotificationsRead(username: string) {
-  const currentUser = await getUserByUsername(username);
-
-  if (!currentUser) {
-    return { ok: false as const, status: 404, message: 'User not found' };
-  }
-
-  await pool.query('UPDATE notifications SET is_read = TRUE WHERE recipient_user_id = $1', [currentUser.id]);
-  return { ok: true as const };
-}
-
-export async function clearNotifications(username: string) {
-  const currentUser = await getUserByUsername(username);
-
-  if (!currentUser) {
-    return { ok: false as const, status: 404, message: 'User not found' };
-  }
-
-  await pool.query('DELETE FROM notifications WHERE recipient_user_id = $1', [currentUser.id]);
-  return { ok: true as const };
 }
