@@ -1,29 +1,32 @@
 import React from 'react';
 import type { Event } from './event';
+import { isAuthenticated } from '../utils/auth';
 import mapIcon from '../icons/map.png';
 import eventsIcon from '../icons/events.png';
 import friendsIcon from '../icons/friends.png';
 import priceIcon from '../icons/price.png';
 
-const HighlightedEventCard: React.FC<{ event: Event }> = ({ event }) => (
+const HighlightedEventCard: React.FC<{ event: Event; onViewDetails?: (event: Event) => void }> = ({ event, onViewDetails }) => (
   <article className='group grid overflow-hidden border-[4px] border-[#fff3b0] bg-[#120707] text-[#fff3b0] lg:grid-cols-2'>
     <div className='relative min-h-[360px] overflow-hidden lg:min-h-[520px]'>
       <img src={event.src} alt={event.alt} className='h-full w-full object-cover transition duration-500 ease-out group-hover:scale-105' />
       <div className='absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#0d0506] via-[#0d0506]/75 to-transparent p-4 lg:p-5'>
-        <div className='inline-flex items-center gap-3 border border-[#fff3b0] bg-[#2a1713]/85 px-3 py-2 backdrop-blur-sm'>
-          <div className='flex -space-x-3'>
-            {event.friendsGoing.slice(0, 3).map((friendAvatar, index) => (
-              <img
-                key={`${friendAvatar}-${index}`}
-                src={friendAvatar}
-                alt=''
-                className='h-9 w-9 rounded-full border-2 border-[#2a1713] object-cover'
-                aria-hidden='true'
-              />
-            ))}
-          </div>
-          <span className='text-sm font-bold text-[#fff3b0] sm:text-base'>{event.friendsGoing.length} friends going</span>
-        </div>
+          {isAuthenticated() ? (
+            <div className='inline-flex items-center gap-3 border border-[#fff3b0] bg-[#2a1713]/85 px-3 py-2 backdrop-blur-sm'>
+              <div className='flex -space-x-3'>
+                {event.friendsGoing.slice(0, 3).map((friendAvatar, index) => (
+                  <img
+                    key={`${friendAvatar}-${index}`}
+                    src={friendAvatar}
+                    alt=''
+                    className='h-9 w-9 rounded-full border-2 border-[#2a1713] object-cover'
+                    aria-hidden='true'
+                  />
+                ))}
+              </div>
+              <span className='text-sm font-bold text-[#fff3b0] sm:text-base'>{event.friendsGoing.length} friends going</span>
+            </div>
+          ) : null}
       </div>
     </div>
 
@@ -63,7 +66,11 @@ const HighlightedEventCard: React.FC<{ event: Event }> = ({ event }) => (
       </div>
 
       <div className='mt-auto'>
-        <button className=' w-full transition duration-300 ease-in-out text-[#fff3b0] p-2 mb-6 border border-[#483d30] hover:bg-[#fff3b0] hover:border-[#fff3b0] hover:text-[#1a0f10]'>
+        <button
+          type='button'
+          onClick={() => onViewDetails?.(event)}
+          className=' w-full transition duration-300 ease-in-out text-[#fff3b0] p-2 mb-6 border border-[#483d30] hover:bg-[#fff3b0] hover:border-[#fff3b0] hover:text-[#1a0f10]'
+        >
           View Details
         </button>
       </div>

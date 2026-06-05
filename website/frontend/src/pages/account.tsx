@@ -1,5 +1,4 @@
 import React from "react";
-import PageLayout from "../components/pageLayout";
 import CompleteProfile from "../components/completeProfile";
 import { useNavigate } from "react-router-dom";
 import customer_icon from "../icons/profile.png";
@@ -14,12 +13,12 @@ const AccountCustomizationPage: React.FC = () => {
     };
 
     return (
-        <PageLayout>
+        <div className='mx-auto flex w-[82%] flex-col items-center gap-8 py-8'>
             <CompleteProfile/>
-            <h1 className="text-3xl font-bold text-[#fff3b0] text-center mt-8">
+            <h1 className="text-3xl font-bold text-[#fff3b0] text-center">
                 Choose Your Account Type
             </h1>
-            <div className="flex flex-row justify-center mb-[10em]">
+            <div className="flex flex-row justify-center flex-wrap gap-6">
                 <button
                     onClick={() => handleSelect("customer")}
                     className="card-button w-[21em] h-[15em] pt-5 m-5 self-center bg-[#1a0f10] border-3 border-[#483d30] hover:border-[#fff3b0] transition-colors duration-400 text-left flex flex-col cursor-pointer">
@@ -61,7 +60,7 @@ const AccountCustomizationPage: React.FC = () => {
                     </p>
                 </button>
             </div>
-        </PageLayout>
+        </div>
     );
 };
 

@@ -4,12 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import editIcon from '../icons/edit-profile.png';
 import editDarkIcon from '../icons/edit-profile-dark.png';
 import { getStoredUser, isAuthenticated } from '../utils/auth';
+import { useCommunityState } from '../utils/community.ts';
 
 const ProfilePage: React.FC = () => {
 
     const navigate = useNavigate();
     const user = React.useMemo(() => getStoredUser(), []);
     const isLoggedIn = isAuthenticated();
+    const communityState = useCommunityState();
 
     React.useEffect(() => {
         if (!isLoggedIn) {
@@ -29,6 +31,8 @@ const ProfilePage: React.FC = () => {
         : 'Event Lover';
     const displayEmail = user?.email || 'Email not set';
     const displayPreferences = user?.preferences ?? [];
+    const attendedEvents = communityState.attendedEvents;
+    const publications = communityState.posts.filter((post) => post.isMine);
 
     return(
         <PageLayout>
@@ -68,8 +72,64 @@ const ProfilePage: React.FC = () => {
                             <p className='text-[#a89060] text-lg'>No preferences set yet.</p>
                         )}
                     </div>
-                    <section className='grid grid-cols-4'>
+                    <section className='mt-10 space-y-10'>
+                        <div>
+                            <div className='mb-4 flex items-end justify-between gap-4'>
+                                <div>
+                                    <h2 className='text-3xl font-bold text-[#fff3b0]'>Events attended</h2>
+                                    <p className='text-[#a89060]'>Drag sideways to browse your recent activity.</p>
+                                </div>
+                                <span className='text-sm uppercase tracking-[0.2em] text-[#a89060]'>{attendedEvents.length} items</span>
+                            </div>
+                            <div className='flex gap-4 overflow-x-auto pb-3'>
+                                {attendedEvents.map((event) => (
+                                    <article key={event.id} className='min-w-[300px] flex-shrink-0 border-2 border-[#483d30] bg-[#120707] overflow-hidden'>
+                                        <div className='h-44 overflow-hidden'>
+                                            <img src={event.image} alt={event.title} className='h-full w-full object-cover' />
+                                        </div>
+                                        <div className='space-y-2 p-4'>
+                                            <div className='flex items-center justify-between gap-3'>
+                                                <h3 className='text-xl font-bold text-[#fff3b0]'>{event.title}</h3>
+                                                <span className='border border-[#fff3b0] px-2 py-1 text-[11px] uppercase tracking-[0.2em] text-[#fff3b0]'>{event.status}</span>
+                                            </div>
+                                            <p className='text-[#a89060]'>{event.location}</p>
+                                            <p className='text-[#a89060]'>{event.date}</p>
+                                        </div>
+                                    </article>
+                                ))}
+                            </div>
+                        </div>
 
+                        <div>
+                            <div className='mb-4 flex items-end justify-between gap-4'>
+                                <div>
+                                    <h2 className='text-3xl font-bold text-[#fff3b0]'>Publications</h2>
+                                    <p className='text-[#a89060]'>Recent posts, images, and interactions.</p>
+                                </div>
+                                <span className='text-sm uppercase tracking-[0.2em] text-[#a89060]'>{publications.length} items</span>
+                            </div>
+                            <div className='flex gap-4 overflow-x-auto pb-3'>
+                                {publications.length > 0 ? publications.map((publication) => (
+                                    <article key={publication.id} className='min-w-[280px] flex-shrink-0 border-2 border-[#483d30] bg-[#120707] overflow-hidden'>
+                                        <div className='h-44 overflow-hidden'>
+                                            <img src={publication.image} alt={publication.caption} className='h-full w-full object-cover' />
+                                        </div>
+                                        <div className='space-y-2 p-4'>
+                                            <h3 className='text-xl font-bold text-[#fff3b0]'>{publication.caption}</h3>
+                                            <p className='text-[#a89060]'>{publication.location}</p>
+                                            <div className='flex items-center justify-between text-sm text-[#a89060]'>
+                                                <span>{publication.likes} likes</span>
+                                                <span>{publication.comments.length} comments</span>
+                                            </div>
+                                        </div>
+                                    </article>
+                                )) : (
+                                    <div className='border-2 border-[#483d30] bg-[#120707] px-4 py-6 text-[#a89060]'>
+                                        No publications yet.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </section>
                 </div>
             </div>

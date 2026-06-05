@@ -1,4 +1,3 @@
-import PageLayout from "../components/pageLayout";
 import CompleteProfile from "../components/completeProfile";
 import Preferences from "../components/preferences";
 import CompleteSetup from "../components/completeSetup";
@@ -33,7 +32,7 @@ const PromoterCustomizationPage: React.FC = () => {
     };
 
     return (
-        <PageLayout>
+        <div className='mx-auto flex w-[82%] flex-col items-center gap-8 py-8'>
             <CompleteProfile />
             <Preferences
                 accountType="Promoter"
@@ -45,7 +44,7 @@ const PromoterCustomizationPage: React.FC = () => {
                 }
             />
             <CompleteSetup onClick={handleSubmit} disabled={!isComplete}/>
-        </PageLayout>
+        </div>
     );
 };
 

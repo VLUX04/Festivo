@@ -1,7 +1,9 @@
 TRUNCATE TABLE
     professional_history, professional_invite,
     event_review, professional_review,
-    application, comments, publication,
+    application, comments, publication_reactions,
+    notifications, stories, attended_events,
+    publication,
     message, chat_participants, chat,
     follows, friends,
     event_tags, event_images, images,
@@ -170,6 +172,48 @@ INSERT INTO event_images (event_id, image_id, is_cover) VALUES
 (20, 20, TRUE)
 ON CONFLICT DO NOTHING;
 
+-- WORK OPPORTUNITIES
+INSERT INTO work_opportunities (id, poster_id, title, position, mode, duration, employment, pay, description, location) VALUES
+(1, 1, 'Summer Festival Stage Crew', 'Stage Technician', 'onsite', 'month', 'full-time', 'EUR 1,800 / month', 'Help set up, manage, and strike the main stage for a month-long cultural festival circuit.', 'Porto, Portugal'),
+(2, 2, 'Remote Social Media Consultant', 'Content Strategist', 'remote', 'ongoing', 'part-time', 'EUR 25 / hour', 'Create social campaigns, schedule posts, and shape the digital voice of an arts venue.', 'Remote'),
+(3, 3, 'Hybrid Exhibition Assistant', 'Gallery Assistant', 'hybrid', 'week', 'part-time', 'EUR 900 / week', 'Support a contemporary exhibition with visitor care, setup tasks, and weekend coverage.', 'Lisbon, Portugal')
+ON CONFLICT DO NOTHING;
+
+-- SOCIAL CONTENT
+INSERT INTO stories (id, user_id, media, label) VALUES
+(1, 11, 'https://picsum.photos/seed/story-seed-1/600/900', 'Opening night'),
+(2, 12, 'https://picsum.photos/seed/story-seed-2/600/900', 'Backstage'),
+(3, 13, 'https://picsum.photos/seed/story-seed-3/600/900', 'My night out')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO publication (id, user_id, media, publish_date, information, location, likes, favorites, shares, event_id) VALUES
+(1, 11, 'https://picsum.photos/seed/pub-1/900/800', '2026-05-25', 'Golden lights, loud drums, and the best crowd I have seen all year.', 'Porto, Portugal', 142, 28, 14, 7),
+(2, 12, 'https://picsum.photos/seed/pub-2/900/800', '2026-05-26', 'Soundcheck finished. The crowd is in for a long night.', 'Lisbon, Portugal', 87, 19, 10, 18),
+(3, 13, 'https://picsum.photos/seed/pub-3/900/800', '2026-05-27', 'New mural, new music, same old city magic.', 'Coimbra, Portugal', 64, 9, 5, 10)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO comments (id, publication_id, user_id, information, publish_date, likes) VALUES
+(1, 1, 12, 'This looks unforgettable.', '2026-05-25 20:00:00', 4),
+(2, 3, 11, 'This color palette is stunning.', '2026-05-27 21:15:00', 2)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO publication_reactions (publication_id, user_id, liked, favorited, shared) VALUES
+(1, 11, TRUE, TRUE, TRUE),
+(2, 11, FALSE, FALSE, FALSE),
+(3, 11, FALSE, FALSE, FALSE)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO notifications (id, recipient_user_id, actor_user_id, kind, title, message, is_read, created_at, publication_id, event_id) VALUES
+(1, 11, 12, 'follow', 'New follower', 'Sofia Martins started following you.', FALSE, '2026-05-29 10:00:00', NULL, NULL),
+(2, 11, 13, 'like', 'New like', 'Ana Ribeiro liked "Golden lights, loud drums, and the best crowd I have seen all year.".', FALSE, '2026-05-30 12:00:00', 1, NULL)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO attended_events (user_id, event_id, status, attended_at) VALUES
+(11, 1, 'Attended', '2026-05-12 20:00:00'),
+(11, 7, 'Attended', '2026-05-18 21:00:00'),
+(11, 10, 'Saved for later', '2026-05-24 18:00:00')
+ON CONFLICT DO NOTHING;
+
 -- CUSTOMER USERS (for chat and social features)
 INSERT INTO users (id, username, name, email, pass, role) VALUES
 (11, 'anaribeiro', 'Ana Ribeiro', 'ana@example.com', 'hashedpass', 'customer'),
@@ -299,5 +343,12 @@ INSERT INTO message (chat_id, sender_id, content, sent_at) VALUES
 ON CONFLICT DO NOTHING;
 
 SELECT setval(pg_get_serial_sequence('users', 'id'), COALESCE(MAX(id), 0) + 1, false) FROM users;
+SELECT setval(pg_get_serial_sequence('events', 'id'), COALESCE(MAX(id), 0) + 1, false) FROM events;
 SELECT setval(pg_get_serial_sequence('images', 'id'), COALESCE(MAX(id), 0) + 1, false) FROM images;
 SELECT setval(pg_get_serial_sequence('chat', 'id'), COALESCE(MAX(id), 0) + 1, false) FROM chat;
+SELECT setval(pg_get_serial_sequence('message', 'id'), COALESCE(MAX(id), 0) + 1, false) FROM message;
+SELECT setval(pg_get_serial_sequence('publication', 'id'), COALESCE(MAX(id), 0) + 1, false) FROM publication;
+SELECT setval(pg_get_serial_sequence('comments', 'id'), COALESCE(MAX(id), 0) + 1, false) FROM comments;
+SELECT setval(pg_get_serial_sequence('stories', 'id'), COALESCE(MAX(id), 0) + 1, false) FROM stories;
+SELECT setval(pg_get_serial_sequence('notifications', 'id'), COALESCE(MAX(id), 0) + 1, false) FROM notifications;
+SELECT setval(pg_get_serial_sequence('work_opportunities', 'id'), COALESCE(MAX(id), 0) + 1, false) FROM work_opportunities;

@@ -145,21 +145,10 @@ const EditProfilePage: React.FC = () => {
                             </div>
 
                             <label className="block">
-                                <span className="block text-sm text-[#a89060] mb-2">Profile image URL</span>
-                                <input
-                                    type="text"
-                                    value={formData.profileImage}
-                                    onChange={(event) => updateField('profileImage', event.target.value)}
-                                    placeholder="Paste an image URL"
-                                    className="w-full px-3 py-2 bg-[#0a0505] border-2 border-[#483d30] text-[#fff3b0] placeholder-[#91805D] focus:outline-none focus:border-[#fff3b0]"
-                                />
-                            </label>
-
-                            <label className="block">
                                 <span className="block text-sm text-[#a89060] mb-2">Upload profile image</span>
                                 <input
                                     type="file"
-                                    accept="image/*"
+                                    accept=".png,.jpg,.jpeg,image/png,image/jpeg"
                                     onChange={handleImageUpload}
                                     className="w-full text-sm text-[#fff3b0] file:mr-4 file:px-4 file:py-2 file:border-0 file:bg-[#fff3b0] file:text-[#540b0e] hover:file:bg-[#e09f3e] cursor-pointer"
                                 />

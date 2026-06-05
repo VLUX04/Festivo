@@ -16,6 +16,7 @@ const defaultFormState = {
   target: '',
   description: '',
   price: '',
+  ticketLink: '',
   imageUrl: '',
   imageAlt: '',
 };
@@ -68,6 +69,24 @@ const CreateEventPage: React.FC = () => {
     setFormData((previous) => ({ ...previous, [name]: value }));
   };
 
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setFormData((previous) => ({
+        ...previous,
+        imageUrl: typeof reader.result === 'string' ? reader.result : '',
+        imageAlt: previous.imageAlt || file.name.replace(/\.[^.]+$/, ''),
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
@@ -86,6 +105,7 @@ const CreateEventPage: React.FC = () => {
         longitude: selectedCoords.lng,
         target: formData.target || undefined,
         price: formData.price || undefined,
+        ticketLink: formData.ticketLink || undefined,
         imageUrl: formData.imageUrl || undefined,
         imageAlt: formData.imageAlt || undefined,
       });
@@ -114,7 +134,21 @@ const CreateEventPage: React.FC = () => {
             <input name='edate' value={formData.edate} onChange={handleChange} required type='date' className='border-2 border-[#483d30] bg-[#2a1f20] p-3 text-[#fff3b0] outline-none focus:border-[#fff3b0]' />
             <input name='eventTime' value={formData.eventTime} onChange={handleChange} required type='time' className='border-2 border-[#483d30] bg-[#2a1f20] p-3 text-[#fff3b0] outline-none focus:border-[#fff3b0]' />
             <input name='price' value={formData.price} onChange={handleChange} placeholder='Price' className='border-2 border-[#483d30] bg-[#2a1f20] p-3 text-[#fff3b0] outline-none focus:border-[#fff3b0]' />
-            <input name='imageUrl' value={formData.imageUrl} onChange={handleChange} placeholder='Cover image URL' className='border-2 border-[#483d30] bg-[#2a1f20] p-3 text-[#fff3b0] outline-none focus:border-[#fff3b0] md:col-span-2' />
+            <input name='ticketLink' value={formData.ticketLink} onChange={handleChange} placeholder='Ticket link' className='border-2 border-[#483d30] bg-[#2a1f20] p-3 text-[#fff3b0] outline-none focus:border-[#fff3b0]' />
+            <label className='border-2 border-[#483d30] bg-[#2a1f20] p-3 text-[#fff3b0] outline-none focus-within:border-[#fff3b0] md:col-span-2'>
+              <span className='block text-sm font-semibold text-[#fff3b0] mb-2'>Cover image file</span>
+              <input
+                type='file'
+                accept='.png,.jpg,.jpeg,image/png,image/jpeg'
+                onChange={handleImageUpload}
+                className='w-full text-sm text-[#fff3b0] file:mr-4 file:px-4 file:py-2 file:border-0 file:bg-[#fff3b0] file:text-[#540b0e] hover:file:bg-[#e09f3e] cursor-pointer'
+              />
+              {formData.imageUrl ? (
+                <div className='mt-3 overflow-hidden border border-[#483d30]'>
+                  <img src={formData.imageUrl} alt={formData.imageAlt || formData.title || 'Event cover preview'} className='h-44 w-full object-cover' />
+                </div>
+              ) : null}
+            </label>
             <input name='imageAlt' value={formData.imageAlt} onChange={handleChange} placeholder='Cover image alt text' className='border-2 border-[#483d30] bg-[#2a1f20] p-3 text-[#fff3b0] outline-none focus:border-[#fff3b0] md:col-span-2' />
             <textarea name='description' value={formData.description} onChange={handleChange} required rows={6} placeholder='Description' className='border-2 border-[#483d30] bg-[#2a1f20] p-3 text-[#fff3b0] outline-none focus:border-[#fff3b0] md:col-span-2' />
 

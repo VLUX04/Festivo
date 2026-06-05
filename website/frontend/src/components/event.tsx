@@ -6,8 +6,10 @@ import friendsIcon from '../icons/friends.png';
 import priceIcon from '../icons/price.png';
 import shareIcon from '../icons/share.png';
 import shareDarkIcon from '../icons/share-dark.png';
+import { isAuthenticated } from '../utils/auth';
 
 export interface Event {
+    id?: number,
     src: string,
     alt: string,
     type: string,
@@ -22,9 +24,10 @@ export interface Event {
     attending: string,
     friendsGoing: string[],
     price: string,
+    ticketLink?: string,
 }
 
-const EventContainer: React.FC<{ event: Event }> = ({ event }) => (
+const EventContainer: React.FC<{ event: Event; onViewDetails?: (event: Event) => void }> = ({ event, onViewDetails }) => (
     <div className='transition duration-300 ease-in-out flex flex-col space-y-2 bg-[#1a0f10] border-3 border-[#483d30] hover:border-[#fff3b0] w-full text-left'>
             <div className='relative'>
                 <img src={event.src} alt={event.alt} className='w-full object-cover' />
@@ -37,17 +40,19 @@ const EventContainer: React.FC<{ event: Event }> = ({ event }) => (
                         <img src={shareDarkIcon} alt="" className='hidden h-5 w-5 group-hover:block' aria-hidden='true' />
                     </button>
                 </div>
-                <div className='absolute bottom-4 left-4 z-10 flex items-center -space-x-2'>
-                    {event.friendsGoing.slice(0, 3).map((friendAvatar, index) => (
-                        <img
-                            key={`${friendAvatar}-${index}`}
-                            src={friendAvatar}
-                            alt=''
-                            className='h-9 w-9 rounded-full border-2 border-[#1a0f10] object-cover'
-                            aria-hidden='true'
-                        />
-                    ))}
-                </div>
+                {isAuthenticated() ? (
+                    <div className='absolute bottom-4 left-4 z-10 flex items-center -space-x-2'>
+                        {event.friendsGoing.slice(0, 3).map((friendAvatar, index) => (
+                            <img
+                                key={`${friendAvatar}-${index}`}
+                                src={friendAvatar}
+                                alt=''
+                                className='h-9 w-9 rounded-full border-2 border-[#1a0f10] object-cover'
+                                aria-hidden='true'
+                            />
+                        ))}
+                    </div>
+                ) : null}
             </div>
             <h1 className='text-[#fff3b0] px-6 text-2xl'>{event.title}</h1>
             <p className='px-6 text-base text-[#fff3b0]'>{event.promoter}</p>
@@ -69,7 +74,25 @@ const EventContainer: React.FC<{ event: Event }> = ({ event }) => (
                 <span className='text-[#a89060] pr-6'>{event.price}</span>
             </div>
             
-            <button className='transition duration-300 ease-in-out text-[#fff3b0] p-2 mx-6 mb-6 border border-[#483d30] hover:bg-[#fff3b0] hover:border-[#fff3b0] hover:text-[#1a0f10]'>View Details</button>
+            <div className='mx-6 mb-6 flex flex-col gap-3 sm:flex-row'>
+                <button
+                    type='button'
+                    onClick={() => onViewDetails?.(event)}
+                    className='transition duration-300 ease-in-out text-[#fff3b0] p-2 border border-[#483d30] hover:bg-[#fff3b0] hover:border-[#fff3b0] hover:text-[#1a0f10]'
+                >
+                    View Details
+                </button>
+                {event.ticketLink ? (
+                    <a
+                        href={event.ticketLink}
+                        target='_blank'
+                        rel='noreferrer'
+                        className='transition duration-300 ease-in-out text-center text-[#1a0f10] p-2 border border-[#fff3b0] bg-[#fff3b0] hover:bg-[#1a0f10] hover:text-[#fff3b0]'
+                    >
+                        Buy Tickets
+                    </a>
+                ) : null}
+            </div>
     </div>
 )
 

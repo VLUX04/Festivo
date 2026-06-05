@@ -11,3 +11,25 @@ const pool = new Pool({
 });
 
 export default pool;
+
+const serialTablesToSync = [
+  'users',
+  'events',
+  'images',
+  'chat',
+  'message',
+  'publication',
+  'comments',
+  'stories',
+  'notifications',
+  'work_opportunities',
+];
+
+export async function syncSerialSequences() {
+  for (const tableName of serialTablesToSync) {
+    await pool.query(
+      `SELECT setval(pg_get_serial_sequence($1, 'id'), COALESCE(MAX(id), 0) + 1, false) FROM ${tableName}`,
+      [tableName],
+    );
+  }
+}

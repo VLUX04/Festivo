@@ -1,7 +1,6 @@
 import React from 'react';
 import { useState } from 'react';
 import registerLogin from '../icons/register.png';
-import PageLayout from '../components/pageLayout';
 import { useNavigate } from 'react-router-dom';
 import { useRegistration } from '../context/RegistrationContext';
 
@@ -71,9 +70,9 @@ const RegisterPage: React.FC = () => {
 	  }
   }
 
-  return (
-    <PageLayout>
-        <div className='w-[28em] h-auto pt-5 m-7 self-center bg-[#1a0f10] border-3 border-[#fff3b0] text-center flex flex-col shadow-[15px_15px_0_0_#231c16]'>
+    return (
+        <div className='mx-auto flex w-[82%] justify-center py-8'>
+                <div className='w-[28em] h-auto pt-5 bg-[#1a0f10] border-3 border-[#fff3b0] text-center flex flex-col shadow-[15px_15px_0_0_#231c16]'>
 		<form onSubmit={handleSubmit}>
             <h1 className='text-5xl font-bold text-[#fff3b0] mt-5'>JOIN FESTIVO</h1>
             <p className='text-[#a89060] mt-5'>Create your account to start discovering events</p>
@@ -112,7 +111,7 @@ const RegisterPage: React.FC = () => {
             </div>
 		</form>
         </div>
-    </PageLayout>
+    </div>
   );
 };
 
