@@ -380,41 +380,6 @@ export async function searchFriends(username: string, query: string) {
   return { ok: true as const, results: result.rows };
 }
 
-export async function addFriend(username: string, friendUsername: string) {
-  const currentUser = await getUserByUsername(username);
-  const targetUser = await getUserByUsername(friendUsername);
-
-  if (!currentUser || !targetUser) {
-    return { ok: false as const, status: 404, message: 'User not found' };
-  }
-
-  if (currentUser.id === targetUser.id) {
-    return { ok: false as const, status: 400, message: 'You cannot add yourself as a friend' };
-  }
-
-  if (currentUser.role !== 'customer' || targetUser.role !== 'customer') {
-    return { ok: false as const, status: 400, message: 'Friends can only be added between customer accounts' };
-  }
-
-  await pool.query('INSERT INTO customer (customer_id) VALUES ($1) ON CONFLICT DO NOTHING', [currentUser.id]);
-  await pool.query('INSERT INTO customer (customer_id) VALUES ($1) ON CONFLICT DO NOTHING', [targetUser.id]);
-
-  const result = await pool.query(
-    `INSERT INTO friends (user1_id, user2_id)
-     VALUES (LEAST($1::int, $2::int), GREATEST($1::int, $2::int))
-     ON CONFLICT DO NOTHING
-     RETURNING user1_id`,
-    [currentUser.id, targetUser.id],
-  );
-
-  const added = (result.rowCount ?? 0) > 0;
-
-  return {
-    ok: true as const,
-    added,
-    message: added ? 'Friend added successfully' : 'Friend already added',
-  };
-}
 
 export async function listIncomingFriendRequests(username: string) {
   const currentUser = await getUserByUsername(username);

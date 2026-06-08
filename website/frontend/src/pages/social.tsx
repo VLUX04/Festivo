@@ -290,49 +290,7 @@ const SocialPage: React.FC = () => {
     }
   };
 
-  const handleAddFriend = async (friendUsername: string) => {
-    const token = getAuthToken();
-
-    if (!token) {
-      navigate('/login');
-      return;
-    }
-
-    try {
-      setAddingFriendUsername(friendUsername);
-      setFriendSearchError('');
-
-      const response = await fetch(`${API_BASE_URL}/social/friends`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ friendUsername }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || 'Failed to add friend');
-      }
-
-      setFriendSearchResults((previous) =>
-        previous.map((friend) =>
-          friend.username === friendUsername ? { ...friend, isFriend: true } : friend,
-        ),
-      );
-
-      await fetchFriendContacts().then((contacts) => {
-        setFriendContacts(contacts);
-        setSelectedFriendUsername((current) => current || contacts[0]?.username || '');
-      });
-    } catch (addError) {
-      setFriendSearchError(addError instanceof Error ? addError.message : 'Failed to add friend');
-    } finally {
-      setAddingFriendUsername('');
-    }
-  };
+  // "Add as friend" (immediate mutual friendship) removed — use friend requests only.
 
   const handleSendFriendRequest = async (receiverUsername: string) => {
     const token = getAuthToken();
@@ -603,26 +561,14 @@ const SocialPage: React.FC = () => {
                           {friend.isFriend ? 'Added' : 'New'}
                         </span>
                       </div>
-                      <div className='mt-4 grid gap-2 sm:grid-cols-2'>
-                        <button
-                          type='button'
-                          onClick={() => void handleAddFriend(friend.username)}
-                          disabled={friend.isFriend || addingFriendUsername === friend.username}
-                          className='border-2 border-[#fff3b0] px-4 py-2 font-semibold text-[#fff3b0] transition hover:bg-[#fff3b0] hover:text-[#540b0e] disabled:cursor-not-allowed disabled:border-[#483d30] disabled:text-[#483d30]'
-                        >
-                          {addingFriendUsername === friend.username
-                            ? 'Adding...'
-                            : friend.isFriend
-                              ? 'Already Friends'
-                              : 'Add as Friend'}
-                        </button>
+                      <div className='mt-4'>
                         <button
                           type='button'
                           onClick={() => void handleSendFriendRequest(friend.username)}
                           disabled={friend.isFriend || addingFriendUsername === friend.username}
-                          className='border-2 border-[#483d30] px-4 py-2 font-semibold text-[#a89060] transition hover:border-[#fff3b0] hover:text-[#fff3b0] disabled:cursor-not-allowed disabled:text-[#483d30]'
+                          className='w-full border-2 border-[#483d30] px-4 py-2 font-semibold text-[#a89060] transition hover:border-[#fff3b0] hover:text-[#fff3b0] disabled:cursor-not-allowed disabled:text-[#483d30]'
                         >
-                          Request Friend
+                          {addingFriendUsername === friend.username ? 'Sending...' : 'Send request'}
                         </button>
                       </div>
                     </div>

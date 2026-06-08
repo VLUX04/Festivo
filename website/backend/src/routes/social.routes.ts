@@ -5,7 +5,6 @@ import { loginMiddleware } from '../middleware/auth.middleware.js';
 import { SECRET_KEY } from '../services/auth.service.js';
 import {
   addPublicationComment,
-  addFriend,
   createPublication,
   acceptFriendRequest,
   declineFriendRequest,
@@ -229,20 +228,6 @@ router.get('/friends/search', loginMiddleware, async (req: any, res) => {
   }
 });
 
-router.post('/friends', loginMiddleware, async (req: any, res) => {
-  try {
-    const { friendUsername } = req.body;
-    const result = await addFriend(req.user.username, friendUsername);
-
-    if (!result.ok) {
-      return res.status(result.status).json({ success: false, message: result.message });
-    }
-
-    res.status(result.added ? 201 : 200).json({ success: true, message: result.message, added: result.added });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
-  }
-});
+// POST /friends route removed — use friend-requests flow instead
 
 export default router;
