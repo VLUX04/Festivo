@@ -84,12 +84,50 @@ In terms of *routing*, API endpoints are organized by subject. Overall, we have:
 
 The *service layer* handles business logic and SQL queries (auth, events, social, work, users, ...). This is the
 heart of the backend and is in charge of performing all operations to complete and serve user requests,
-including interacting with the _SQLite_ database.
+including interacting with the SQL database.
 
 The *frontend shell and routing* leverages the `React Router` technology
 to map all pages to the URI routes. We use consistent page layout with the aid of
 React's modular approach to frontend development with components.
 
-*Frontend state* is useful for keeping authorization tokens and other data, 
+*Frontend state* is useful for keeping authorization tokens and other data, such as
+community interactions.
 
-= Technologies used
+== Frontend / backend separation
+
+There is a clear 3-tier separation among frontend and backend, with the following ports
+being utilized:
+
+/ Frontend: on port `5173`
+/ Backend API: on port `3000`
+/ PostgreSQL: on port `5432`
+
+= Technologies used / Tech stack
+\
+Frontend:
+
+- `React`
+- `TypeScript`
+- `Vite`
+- `React Router`
+- `Tailwind plugin`
+- `Leaflet`
+\
+Backend:
+
+- `Node.js`
+- `TypeScript`
+- `Express`
+- `pg`
+- `bcrypt`
+- `jsonwebtoken`
+- `dotenv`
+- `cors`
+\
+Database:
+- `PostgreSQL schema`
+- `triggers`
+- `seed/populate SQL`
+\
+Deployment / dev runtime:
+- `Dockerfiles/docker-compose`
