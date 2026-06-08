@@ -12,7 +12,10 @@ export type WorkOpportunityPayload = {
   location?: string;
 };
 
-export async function listWorkOpportunities() {
+export async function listWorkOpportunities(viewerUsername?: string) {
+  const viewer = viewerUsername ? await getUserByUsername(viewerUsername) : null;
+  const viewerId = viewer?.id ?? null;
+
   const result = await pool.query(
     `SELECT
         wo.id,
@@ -30,10 +33,44 @@ export async function listWorkOpportunities() {
         u.role AS "posterRole"
      FROM work_opportunities wo
      JOIN users u ON u.id = wo.poster_id
+        WHERE ($1::int IS NULL OR wo.poster_id <> $1)
      ORDER BY wo.created_at DESC, wo.id DESC`,
+       [viewerId],
   );
 
   return result.rows;
+}
+
+export async function listMyWorkOpportunities(username: string) {
+  const currentUser = await getUserByUsername(username);
+
+  if (!currentUser) {
+    return { ok: false as const, status: 404, message: 'User not found' };
+  }
+
+  const result = await pool.query(
+    `SELECT
+        wo.id,
+        wo.title,
+        wo.position,
+        wo.mode,
+        wo.duration,
+        wo.employment,
+        wo.pay,
+        wo.description,
+        wo.location,
+        wo.created_at AS "createdAt",
+        u.username AS "posterUsername",
+        COALESCE(u.name, u.username) AS poster,
+        u.role AS "posterRole"
+     FROM work_opportunities wo
+     JOIN users u ON u.id = wo.poster_id
+     WHERE wo.poster_id = $1
+     ORDER BY wo.created_at DESC, wo.id DESC`,
+    [currentUser.id],
+  );
+
+  return { ok: true as const, opportunities: result.rows };
 }
 
 export async function createWorkOpportunity(username: string, payload: WorkOpportunityPayload) {

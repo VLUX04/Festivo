@@ -57,13 +57,20 @@ type CommunityFeedResponse = {
   attendedEvents: AttendedEvent[];
 };
 
-type ShareableItemType = 'publication' | 'event';
+type ShareableItemType = 'publication' | 'event' | 'work-opportunity';
 
 export type FriendContact = {
   chatId?: number | null;
   username: string;
   name: string;
   role: string;
+};
+
+export type FriendRequest = {
+  id: number;
+  senderUsername: string;
+  senderName: string;
+  createdAt: string;
 };
 
 const inferMediaType = (mediaUrl: string): 'image' | 'video' => {
@@ -203,6 +210,7 @@ export const emptyCommunityState: CommunityState = {
 
 let currentState: CommunityState = seedState();
 const listeners = new Set<() => void>();
+let nextTempPublicationId = -1;
 
 const emitChange = (): void => {
   listeners.forEach((listener) => listener());
@@ -318,11 +326,27 @@ export const fetchFriendContacts = async (): Promise<FriendContact[]> => {
   }
 };
 
+export const fetchFriendRequests = async (): Promise<FriendRequest[]> => {
+  const headers = authHeaders();
+
+  if (!headers) {
+    return [];
+  }
+
+  try {
+    const data = await requestJson<{ requests: FriendRequest[] }>('/social/friend-requests', { headers });
+    return data.requests || [];
+  } catch {
+    return [];
+  }
+};
+
 export const createPost = (payload: { caption: string; image: string; location?: string; mediaType?: 'image' | 'video' }): void => {
+  const tempId = nextTempPublicationId--;
   const optimisticPost: CommunityPost = {
-    id: Date.now(),
+    id: tempId,
     author: getStoredUser()?.name || getStoredUser()?.username || 'You',
-    avatar: `https://picsum.photos/seed/user-${Date.now()}/120/120`,
+    avatar: `https://picsum.photos/seed/user-${Math.abs(tempId)}/120/120`,
     image: payload.image,
     mediaType: payload.mediaType || inferMediaType(payload.image),
     caption: payload.caption,
@@ -356,7 +380,12 @@ export const createPost = (payload: { caption: string; image: string; location?:
     body: JSON.stringify(payload),
   })
     .then(() => loadFeedFromServer())
-    .catch(() => undefined);
+    .catch(() => {
+      setCurrentState({
+        ...currentState,
+        posts: currentState.posts.filter((post) => post.id !== tempId),
+      });
+    });
 };
 
 export const togglePostLike = (postId: number): void => {
@@ -491,6 +520,49 @@ export const shareItemWithFriend = (payload: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(payload),
+  }).then(() => undefined);
+};
+
+export const sendFriendRequest = (receiverUsername: string): Promise<void> => {
+  const headers = authHeaders();
+
+  if (!headers) {
+    return Promise.resolve();
+  }
+
+  return requestJson('/social/friend-requests', {
+    method: 'POST',
+    headers: {
+      ...headers,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ receiverUsername }),
+  }).then(() => undefined);
+};
+
+export const acceptFriendRequest = (requestId: number): Promise<void> => {
+  const headers = authHeaders();
+
+  if (!headers) {
+    return Promise.resolve();
+  }
+
+  return requestJson(`/social/friend-requests/${requestId}/accept`, {
+    method: 'POST',
+    headers,
+  }).then(() => undefined);
+};
+
+export const declineFriendRequest = (requestId: number): Promise<void> => {
+  const headers = authHeaders();
+
+  if (!headers) {
+    return Promise.resolve();
+  }
+
+  return requestJson(`/social/friend-requests/${requestId}/decline`, {
+    method: 'POST',
+    headers,
   }).then(() => undefined);
 };
 

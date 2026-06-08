@@ -33,3 +33,23 @@ export async function syncSerialSequences() {
     );
   }
 }
+
+export async function ensureTextMediaColumns() {
+  await pool.query(`ALTER TABLE publication ALTER COLUMN media TYPE TEXT USING media::TEXT`);
+  await pool.query(`ALTER TABLE stories ALTER COLUMN media TYPE TEXT USING media::TEXT`);
+}
+
+export async function ensureFriendRequestsTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS friend_requests (
+      id SERIAL PRIMARY KEY,
+      sender_id INT NOT NULL,
+      receiver_id INT NOT NULL,
+      status VARCHAR(20) NOT NULL DEFAULT 'pending',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (sender_id) REFERENCES customer(customer_id) ON DELETE CASCADE,
+      FOREIGN KEY (receiver_id) REFERENCES customer(customer_id) ON DELETE CASCADE,
+      UNIQUE (sender_id, receiver_id)
+    )
+  `);
+}

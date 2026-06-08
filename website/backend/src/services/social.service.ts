@@ -280,11 +280,40 @@ type FriendRow = {
   chatId: number | null;
 };
 
+type FriendRequestRow = {
+  id: number;
+  senderUsername: string;
+  senderName: string;
+  createdAt: string;
+};
+
 export async function listFriends(username: string) {
   const currentUser = await getUserByUsername(username);
 
   if (!currentUser) {
     return { ok: false as const, status: 404, message: 'User not found' };
+  }
+
+  if (currentUser.role === 'professional') {
+    const result = await pool.query(
+      `SELECT DISTINCT
+          u.id AS "friendId",
+          u.username,
+          COALESCE(u.name, u.username) AS name,
+          u.role,
+          c.id AS "chatId"
+       FROM chat c
+       JOIN chat_participants cp1 ON c.id = cp1.chat_id
+       JOIN chat_participants cp2 ON c.id = cp2.chat_id
+       JOIN users u ON cp2.user_id = u.id
+       WHERE cp1.user_id = $1
+         AND cp2.user_id != $1
+         AND u.role = $2
+       ORDER BY name ASC, username ASC`,
+      [currentUser.id, currentUser.role],
+    );
+
+    return { ok: true as const, friends: result.rows as FriendRow[] };
   }
 
   const result = await pool.query(
@@ -385,4 +414,141 @@ export async function addFriend(username: string, friendUsername: string) {
     added,
     message: added ? 'Friend added successfully' : 'Friend already added',
   };
+}
+
+export async function listIncomingFriendRequests(username: string) {
+  const currentUser = await getUserByUsername(username);
+
+  if (!currentUser) {
+    return { ok: false as const, status: 404, message: 'User not found' };
+  }
+
+  if (currentUser.role !== 'customer') {
+    return { ok: true as const, requests: [] as FriendRequestRow[] };
+  }
+
+  const result = await pool.query(
+    `SELECT
+        fr.id,
+        u.username AS "senderUsername",
+        COALESCE(u.name, u.username) AS "senderName",
+        fr.created_at AS "createdAt"
+     FROM friend_requests fr
+     JOIN users u ON u.id = fr.sender_id
+     WHERE fr.receiver_id = $1
+       AND fr.status = 'pending'
+     ORDER BY fr.created_at DESC, fr.id DESC`,
+    [currentUser.id],
+  );
+
+  return { ok: true as const, requests: result.rows as FriendRequestRow[] };
+}
+
+export async function sendFriendRequest(username: string, receiverUsername: string) {
+  const sender = await getUserByUsername(username);
+  const receiver = await getUserByUsername(receiverUsername);
+
+  if (!sender || !receiver) {
+    return { ok: false as const, status: 404, message: 'User not found' };
+  }
+
+  if (sender.id === receiver.id) {
+    return { ok: false as const, status: 400, message: 'You cannot request yourself' };
+  }
+
+  if (sender.role !== 'customer' || receiver.role !== 'customer') {
+    return { ok: false as const, status: 400, message: 'Friend requests are only available between customer accounts' };
+  }
+
+  await pool.query('INSERT INTO customer (customer_id) VALUES ($1) ON CONFLICT DO NOTHING', [sender.id]);
+  await pool.query('INSERT INTO customer (customer_id) VALUES ($1) ON CONFLICT DO NOTHING', [receiver.id]);
+
+  const existingFriend = await pool.query(
+    'SELECT 1 FROM friends WHERE (user1_id = LEAST($1::int, $2::int) AND user2_id = GREATEST($1::int, $2::int))',
+    [sender.id, receiver.id],
+  );
+
+  if (existingFriend.rowCount) {
+    return { ok: false as const, status: 400, message: 'You are already friends' };
+  }
+
+  const existingRequest = await pool.query(
+    'SELECT id, sender_id, receiver_id, status FROM friend_requests WHERE sender_id = $1 AND receiver_id = $2',
+    [sender.id, receiver.id],
+  );
+
+  if (existingRequest.rowCount) {
+    return { ok: true as const, requestId: existingRequest.rows[0].id, message: 'Request already sent' };
+  }
+
+  const result = await pool.query(
+    'INSERT INTO friend_requests (sender_id, receiver_id, status) VALUES ($1, $2, $3) RETURNING id',
+    [sender.id, receiver.id, 'pending'],
+  );
+
+  return { ok: true as const, requestId: result.rows[0].id, message: 'Friend request sent' };
+}
+
+export async function acceptFriendRequest(username: string, requestId: number) {
+  const currentUser = await getUserByUsername(username);
+
+  if (!currentUser) {
+    return { ok: false as const, status: 404, message: 'User not found' };
+  }
+
+  const request = await pool.query(
+    'SELECT id, sender_id, receiver_id, status FROM friend_requests WHERE id = $1',
+    [requestId],
+  );
+
+  if (request.rowCount === 0) {
+    return { ok: false as const, status: 404, message: 'Friend request not found' };
+  }
+
+  const pendingRequest = request.rows[0];
+
+  if (pendingRequest.receiver_id !== currentUser.id) {
+    return { ok: false as const, status: 403, message: 'You cannot accept this request' };
+  }
+
+  if (pendingRequest.status !== 'pending') {
+    return { ok: false as const, status: 400, message: 'Friend request is not pending' };
+  }
+
+  const user1 = Math.min(pendingRequest.sender_id, pendingRequest.receiver_id);
+  const user2 = Math.max(pendingRequest.sender_id, pendingRequest.receiver_id);
+
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+    await client.query('INSERT INTO friends (user1_id, user2_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [user1, user2]);
+    await client.query('UPDATE friend_requests SET status = $1 WHERE id = $2', ['accepted', requestId]);
+    await client.query('COMMIT');
+    return { ok: true as const, message: 'Friend request accepted' };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function declineFriendRequest(username: string, requestId: number) {
+  const currentUser = await getUserByUsername(username);
+
+  if (!currentUser) {
+    return { ok: false as const, status: 404, message: 'User not found' };
+  }
+
+  const result = await pool.query(
+    'UPDATE friend_requests SET status = $1 WHERE id = $2 AND receiver_id = $3 AND status = $4 RETURNING id',
+    ['declined', requestId, currentUser.id, 'pending'],
+  );
+
+  if (result.rowCount === 0) {
+    return { ok: false as const, status: 404, message: 'Friend request not found' };
+  }
+
+  return { ok: true as const, message: 'Friend request declined' };
 }

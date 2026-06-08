@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import PageLayout from '../components/pageLayout';
-import { getAuthToken, getStoredUser, isAuthenticated } from '../utils/auth';
+import { getAuthToken, getStoredUser, isAuthenticated, isProfessionalRole } from '../utils/auth';
 
 const API_BASE_URL = 'http://localhost:3000';
 
@@ -61,9 +61,11 @@ const FriendsPage: React.FC = () => {
 
   const loggedIn = isAuthenticated();
   const currentUser = React.useMemo(() => getStoredUser(), []);
+  const isProfessional = isProfessionalRole(currentUser?.role);
 
   const [friendContacts, setFriendContacts] = React.useState<FriendContact[]>([]);
   const [selectedChatId, setSelectedChatId] = React.useState<number | null>(null);
+  const [activeChatUsername, setActiveChatUsername] = React.useState('');
   const [messages, setMessages] = React.useState<ChatMessage[]>([]);
   const [loadingFriends, setLoadingFriends] = React.useState(true);
   const [loadingMessages, setLoadingMessages] = React.useState(false);
@@ -73,11 +75,11 @@ const FriendsPage: React.FC = () => {
 
   const selectedFriend = React.useMemo(() => {
     if (!selectedChatId) {
-      return null;
+      return activeChatUsername ? ({ username: activeChatUsername, name: activeChatUsername, role: 'customer' } as FriendContact) : null;
     }
 
-    return friendContacts.find((friend) => friend.chatId === selectedChatId) ?? null;
-  }, [friendContacts, selectedChatId]);
+    return friendContacts.find((friend) => friend.chatId === selectedChatId) ?? (activeChatUsername ? ({ username: activeChatUsername, name: activeChatUsername, role: 'customer', chatId: selectedChatId } as FriendContact) : null);
+  }, [activeChatUsername, friendContacts, selectedChatId]);
 
   const loadFriends = React.useCallback(async () => {
     const token = getAuthToken();
@@ -161,18 +163,17 @@ const FriendsPage: React.FC = () => {
   React.useEffect(() => {
     const targetUsername = searchParams.get('chat');
 
-    if (!targetUsername || friendContacts.length === 0) {
+    if (!targetUsername) {
+      setActiveChatUsername('');
       return;
     }
+
+    setActiveChatUsername(targetUsername);
 
     const matchedFriend = friendContacts.find((friend) => friend.username === targetUsername);
 
-    if (!matchedFriend) {
-      return;
-    }
-
     const openChat = async () => {
-      if (matchedFriend.chatId) {
+      if (matchedFriend?.chatId) {
         setSelectedChatId(matchedFriend.chatId);
         return;
       }
@@ -189,7 +190,7 @@ const FriendsPage: React.FC = () => {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ friendUsername: matchedFriend.username }),
+          body: JSON.stringify({ friendUsername: targetUsername }),
         });
 
         const data = await response.json();
@@ -199,6 +200,7 @@ const FriendsPage: React.FC = () => {
         }
 
         setSelectedChatId(Number(data.chatId));
+        setActiveChatUsername(targetUsername);
         await loadFriends();
       } catch (chatError) {
         setError(chatError instanceof Error ? chatError.message : 'Unable to open chat');
@@ -239,6 +241,7 @@ const FriendsPage: React.FC = () => {
       }
 
       setSelectedChatId(Number(data.chatId));
+      setActiveChatUsername(friend.username);
       await loadFriends();
     } catch (chatError) {
       setError(chatError instanceof Error ? chatError.message : 'Unable to open chat');
@@ -295,8 +298,12 @@ const FriendsPage: React.FC = () => {
     <PageLayout>
       <div className='w-full p-4 space-y-6 flex flex-col items-center mt-6'>
         <div className='w-[82%] border-4 border-[#fff3b0] bg-[#1a0f10] p-8 mb-8'>
-          <h1 className='text-[#fff3b0] text-5xl font-bold mb-6'>FRIENDS & COMMUNITY</h1>
-          <p className='text-[#a89060] text-xl'>People you have added as friends appear here, ready to message.</p>
+          <h1 className='text-[#fff3b0] text-5xl font-bold mb-6'>{isProfessional ? 'CONTACTS & COMMUNITY' : 'FRIENDS & COMMUNITY'}</h1>
+          <p className='text-[#a89060] text-xl'>
+            {isProfessional
+              ? 'People you have connected with appear here, ready to message.'
+              : 'People you have added as friends appear here, ready to message.'}
+          </p>
         </div>
 
         {error ? (
@@ -308,7 +315,7 @@ const FriendsPage: React.FC = () => {
         <div className='w-[82%] flex gap-6 mb-8'>
           <div className='w-1/3 space-y-6'>
             <div className='border-4 border-[#fff3b0] bg-[#1a0f10] p-6'>
-              <h2 className='text-[#fff3b0] text-xl font-bold mb-4'>Your Friends</h2>
+              <h2 className='text-[#fff3b0] text-xl font-bold mb-4'>{isProfessional ? 'Your Contacts' : 'Your Friends'}</h2>
               <div className='space-y-3 max-h-96 overflow-y-auto'>
                 {loadingFriends ? (
                   <p className='text-[#a89060]'>Loading friends...</p>
@@ -357,7 +364,7 @@ const FriendsPage: React.FC = () => {
                     onClick={() => setSelectedChatId(null)}
                     className='text-[#a89060] hover:text-[#fff3b0] transition'
                   >
-                    ← Back to friends
+                    ← Back to {isProfessional ? 'contacts' : 'friends'}
                   </button>
                   <h3 className='text-[#fff3b0] text-xl font-bold mt-2'>{selectedFriend.name}</h3>
                   <p className='text-[#a89060]'>@{selectedFriend.username}</p>

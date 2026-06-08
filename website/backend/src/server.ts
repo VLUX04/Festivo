@@ -7,7 +7,7 @@ import chatRoutes from './routes/chat.routes.js';
 import eventRoutes from './routes/event.routes.js';
 import socialRoutes from './routes/social.routes.js';
 import workRoutes from './routes/work.routes.js';
-import { syncSerialSequences } from './db.js';
+import { ensureFriendRequestsTable, ensureTextMediaColumns, syncSerialSequences } from './db.js';
 
 dotenv.config();
 
@@ -37,6 +37,8 @@ app.get('/', (_req, res) => {
 
 const bootstrap = async () => {
     await syncSerialSequences();
+    await ensureFriendRequestsTable();
+    await ensureTextMediaColumns();
     app.listen(PORT, () => console.log(`Backend running on port ${PORT} (DB host: ${process.env.DB_HOST ?? 'not set'})`));
 };
 

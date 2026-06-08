@@ -88,6 +88,18 @@ CREATE TABLE friends (
     CHECK (user1_id < user2_id)
 );
 
+-- FRIEND REQUESTS
+CREATE TABLE friend_requests (
+    id SERIAL PRIMARY KEY,
+    sender_id INT NOT NULL,
+    receiver_id INT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (sender_id) REFERENCES customer(customer_id) ON DELETE CASCADE,
+    FOREIGN KEY (receiver_id) REFERENCES customer(customer_id) ON DELETE CASCADE,
+    UNIQUE (sender_id, receiver_id)
+);
+
 -- FOLLOWS
 CREATE TABLE follows (
     customer_id INT,

@@ -5,6 +5,7 @@ TRUNCATE TABLE
     notifications, stories, attended_events,
     publication,
     message, chat_participants, chat,
+    friend_requests,
     follows, friends,
     event_tags, event_images, images,
     events,
@@ -13,17 +14,18 @@ TRUNCATE TABLE
 RESTART IDENTITY CASCADE;
 
 -- USERS
+-- All seeded accounts share the password festivo123.
 INSERT INTO users (id, username, name, email, pass, role) VALUES
-(1, 'jazzmaster', 'Jazz Master', 'jazz@example.com', 'hashedpass', 'professional'),
-(2, 'artcurator', 'Art Curator', 'art@example.com', 'hashedpass', 'professional'),
-(3, 'orchestral', 'Orchestral Pro', 'orchestra@example.com', 'hashedpass', 'professional'),
-(4, 'photopro', 'Photo Pro', 'photo@example.com', 'hashedpass', 'professional'),
-(5, 'festivalpro', 'Festival Pro', 'festival@example.com', 'hashedpass', 'professional'),
-(6, 'bizpro', 'Biz Pro', 'biz@example.com', 'hashedpass', 'professional'),
-(7, 'artworkshop', 'Art Workshop', 'workshop@example.com', 'hashedpass', 'professional'),
-(8, 'startuppro', 'Startup Pro', 'startup@example.com', 'hashedpass', 'professional'),
-(9, 'concertpro', 'Concert Pro', 'concert@example.com', 'hashedpass', 'professional'),
-(10, 'esportspro', 'Esports Pro', 'esports@example.com', 'hashedpass', 'professional')
+(1, 'jazzmaster', 'Jazz Master', 'jazz@example.com', '$2b$10$E09O2hjRiZ1DdUxSrDHA2ubjg8JWJ2NFeCUIP2W3Xbv8.l/epaJRa', 'professional'),
+(2, 'artcurator', 'Art Curator', 'art@example.com', '$2b$10$E09O2hjRiZ1DdUxSrDHA2ubjg8JWJ2NFeCUIP2W3Xbv8.l/epaJRa', 'professional'),
+(3, 'orchestral', 'Orchestral Pro', 'orchestra@example.com', '$2b$10$E09O2hjRiZ1DdUxSrDHA2ubjg8JWJ2NFeCUIP2W3Xbv8.l/epaJRa', 'professional'),
+(4, 'photopro', 'Photo Pro', 'photo@example.com', '$2b$10$E09O2hjRiZ1DdUxSrDHA2ubjg8JWJ2NFeCUIP2W3Xbv8.l/epaJRa', 'professional'),
+(5, 'festivalpro', 'Festival Pro', 'festival@example.com', '$2b$10$E09O2hjRiZ1DdUxSrDHA2ubjg8JWJ2NFeCUIP2W3Xbv8.l/epaJRa', 'professional'),
+(6, 'bizpro', 'Biz Pro', 'biz@example.com', '$2b$10$E09O2hjRiZ1DdUxSrDHA2ubjg8JWJ2NFeCUIP2W3Xbv8.l/epaJRa', 'professional'),
+(7, 'artworkshop', 'Art Workshop', 'workshop@example.com', '$2b$10$E09O2hjRiZ1DdUxSrDHA2ubjg8JWJ2NFeCUIP2W3Xbv8.l/epaJRa', 'professional'),
+(8, 'startuppro', 'Startup Pro', 'startup@example.com', '$2b$10$E09O2hjRiZ1DdUxSrDHA2ubjg8JWJ2NFeCUIP2W3Xbv8.l/epaJRa', 'professional'),
+(9, 'concertpro', 'Concert Pro', 'concert@example.com', '$2b$10$E09O2hjRiZ1DdUxSrDHA2ubjg8JWJ2NFeCUIP2W3Xbv8.l/epaJRa', 'professional'),
+(10, 'esportspro', 'Esports Pro', 'esports@example.com', '$2b$10$E09O2hjRiZ1DdUxSrDHA2ubjg8JWJ2NFeCUIP2W3Xbv8.l/epaJRa', 'professional')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO professional_profile (user_id) VALUES
@@ -216,22 +218,22 @@ ON CONFLICT DO NOTHING;
 
 -- CUSTOMER USERS (for chat and social features)
 INSERT INTO users (id, username, name, email, pass, role) VALUES
-(11, 'anaribeiro', 'Ana Ribeiro', 'ana@example.com', 'hashedpass', 'customer'),
-(12, 'miguelcosta', 'Miguel Costa', 'miguel@example.com', 'hashedpass', 'customer'),
-(13, 'sofiamartins', 'Sofia Martins', 'sofia@example.com', 'hashedpass', 'customer'),
-(14, 'tiagosimoes', 'Tiago Simões', 'tiago@example.com', 'hashedpass', 'customer'),
-(15, 'inescarvalho', 'Inês Carvalho', 'ines@example.com', 'hashedpass', 'customer'),
-(16, 'joaoferreira', 'João Ferreira', 'joao@example.com', 'hashedpass', 'customer'),
-(17, 'martalopes', 'Marta Lopes', 'marta@example.com', 'hashedpass', 'customer'),
-(18, 'ruioliveira', 'Rui Oliveira', 'rui@example.com', 'hashedpass', 'customer'),
-(19, 'carlasantos', 'Carla Santos', 'carla@example.com', 'hashedpass', 'customer'),
-(20, 'brunopires', 'Bruno Pires', 'bruno@example.com', 'hashedpass', 'customer'),
-(21, 'lauranunes', 'Laura Nunes', 'laura@example.com', 'hashedpass', 'customer'),
-(22, 'andregomes', 'André Gomes', 'andre@example.com', 'hashedpass', 'customer'),
-(23, 'patriciarocha', 'Patricia Rocha', 'patricia@example.com', 'hashedpass', 'customer'),
-(24, 'diogocardoso', 'Diogo Cardoso', 'diogo@example.com', 'hashedpass', 'customer'),
-(25, 'helenapinto', 'Helena Pinto', 'helena@example.com', 'hashedpass', 'customer'),
-(26, 'nunsteixeira', 'Nuno Teixeira', 'nuno@example.com', 'hashedpass', 'customer')
+(11, 'anaribeiro', 'Ana Ribeiro', 'ana@example.com', '$2b$10$E09O2hjRiZ1DdUxSrDHA2ubjg8JWJ2NFeCUIP2W3Xbv8.l/epaJRa', 'customer'),
+(12, 'miguelcosta', 'Miguel Costa', 'miguel@example.com', '$2b$10$E09O2hjRiZ1DdUxSrDHA2ubjg8JWJ2NFeCUIP2W3Xbv8.l/epaJRa', 'customer'),
+(13, 'sofiamartins', 'Sofia Martins', 'sofia@example.com', '$2b$10$E09O2hjRiZ1DdUxSrDHA2ubjg8JWJ2NFeCUIP2W3Xbv8.l/epaJRa', 'customer'),
+(14, 'tiagosimoes', 'Tiago Simões', 'tiago@example.com', '$2b$10$E09O2hjRiZ1DdUxSrDHA2ubjg8JWJ2NFeCUIP2W3Xbv8.l/epaJRa', 'customer'),
+(15, 'inescarvalho', 'Inês Carvalho', 'ines@example.com', '$2b$10$E09O2hjRiZ1DdUxSrDHA2ubjg8JWJ2NFeCUIP2W3Xbv8.l/epaJRa', 'customer'),
+(16, 'joaoferreira', 'João Ferreira', 'joao@example.com', '$2b$10$E09O2hjRiZ1DdUxSrDHA2ubjg8JWJ2NFeCUIP2W3Xbv8.l/epaJRa', 'customer'),
+(17, 'martalopes', 'Marta Lopes', 'marta@example.com', '$2b$10$E09O2hjRiZ1DdUxSrDHA2ubjg8JWJ2NFeCUIP2W3Xbv8.l/epaJRa', 'customer'),
+(18, 'ruioliveira', 'Rui Oliveira', 'rui@example.com', '$2b$10$E09O2hjRiZ1DdUxSrDHA2ubjg8JWJ2NFeCUIP2W3Xbv8.l/epaJRa', 'customer'),
+(19, 'carlasantos', 'Carla Santos', 'carla@example.com', '$2b$10$E09O2hjRiZ1DdUxSrDHA2ubjg8JWJ2NFeCUIP2W3Xbv8.l/epaJRa', 'customer'),
+(20, 'brunopires', 'Bruno Pires', 'bruno@example.com', '$2b$10$E09O2hjRiZ1DdUxSrDHA2ubjg8JWJ2NFeCUIP2W3Xbv8.l/epaJRa', 'customer'),
+(21, 'lauranunes', 'Laura Nunes', 'laura@example.com', '$2b$10$E09O2hjRiZ1DdUxSrDHA2ubjg8JWJ2NFeCUIP2W3Xbv8.l/epaJRa', 'customer'),
+(22, 'andregomes', 'André Gomes', 'andre@example.com', '$2b$10$E09O2hjRiZ1DdUxSrDHA2ubjg8JWJ2NFeCUIP2W3Xbv8.l/epaJRa', 'customer'),
+(23, 'patriciarocha', 'Patricia Rocha', 'patricia@example.com', '$2b$10$E09O2hjRiZ1DdUxSrDHA2ubjg8JWJ2NFeCUIP2W3Xbv8.l/epaJRa', 'customer'),
+(24, 'diogocardoso', 'Diogo Cardoso', 'diogo@example.com', '$2b$10$E09O2hjRiZ1DdUxSrDHA2ubjg8JWJ2NFeCUIP2W3Xbv8.l/epaJRa', 'customer'),
+(25, 'helenapinto', 'Helena Pinto', 'helena@example.com', '$2b$10$E09O2hjRiZ1DdUxSrDHA2ubjg8JWJ2NFeCUIP2W3Xbv8.l/epaJRa', 'customer'),
+(26, 'nunsteixeira', 'Nuno Teixeira', 'nuno@example.com', '$2b$10$E09O2hjRiZ1DdUxSrDHA2ubjg8JWJ2NFeCUIP2W3Xbv8.l/epaJRa', 'customer')
 ON CONFLICT DO NOTHING;
 
 -- CUSTOMER PROFILES

@@ -4,17 +4,22 @@ import PageLayout from '../components/pageLayout';
 import {
   addCommentToPost,
   createPost,
+  acceptFriendRequest,
   fetchFriendContacts,
+  fetchFriendRequests,
+  declineFriendRequest,
   refreshCommunityState,
   shareItemWithFriend,
   sharePost,
+  sendFriendRequest,
   togglePostFavorite,
   togglePostLike,
   useCommunityState,
   type CommunityPost,
   type FriendContact,
+  type FriendRequest,
 } from '../utils/community.ts';
-import { AUTH_CHANGED_EVENT, getAuthToken, isAuthenticated } from '../utils/auth';
+import { AUTH_CHANGED_EVENT, getAuthToken, getStoredUser, isAuthenticated, isProfessionalRole } from '../utils/auth';
 
 type FriendSearchResult = {
   friendId: number;
@@ -36,6 +41,7 @@ const SocialPage: React.FC = () => {
   const [selectedPost, setSelectedPost] = React.useState<CommunityPost | null>(null);
   const [selectedVideoId, setSelectedVideoId] = React.useState<number | null>(null);
   const [friendContacts, setFriendContacts] = React.useState<FriendContact[]>([]);
+  const [friendRequests, setFriendRequests] = React.useState<FriendRequest[]>([]);
   const [selectedFriendUsername, setSelectedFriendUsername] = React.useState('');
   const [friendSearchQuery, setFriendSearchQuery] = React.useState('');
   const [friendSearchResults, setFriendSearchResults] = React.useState<FriendSearchResult[]>([]);
@@ -46,6 +52,7 @@ const SocialPage: React.FC = () => {
   const videoRefs = React.useRef(new Map<number, HTMLVideoElement | null>());
   const navigate = useNavigate();
   const [isLogged, setIsLogged] = React.useState<boolean>(isAuthenticated());
+  const isProfessional = isProfessionalRole(getStoredUser()?.role);
 
   React.useEffect(() => {
     const update = () => setIsLogged(isAuthenticated());
@@ -66,6 +73,7 @@ const SocialPage: React.FC = () => {
       setFriendContacts(contacts);
       setSelectedFriendUsername((current) => current || contacts[0]?.username || '');
     });
+    void fetchFriendRequests().then(setFriendRequests);
   }, []);
 
   React.useEffect(() => {
@@ -264,18 +272,22 @@ const SocialPage: React.FC = () => {
       return;
     }
 
-    await shareItemWithFriend({
-      friendUsername: selectedFriendUsername.trim(),
-      itemType: 'publication',
-      itemId: selectedPost.id,
-      title: selectedPost.caption,
-      url: `/social?postId=${selectedPost.id}`,
-      body: selectedPost.caption,
-    });
+    try {
+      await shareItemWithFriend({
+        friendUsername: selectedFriendUsername.trim(),
+        itemType: 'publication',
+        itemId: selectedPost.id,
+        title: selectedPost.caption,
+        url: `/social?postId=${selectedPost.id}`,
+        body: selectedPost.caption,
+      });
 
-    await sharePost(selectedPost.id);
+      await sharePost(selectedPost.id);
 
-    await refreshCommunityState();
+      await refreshCommunityState();
+    } catch (error) {
+      console.error('Failed to share publication', error);
+    }
   };
 
   const handleAddFriend = async (friendUsername: string) => {
@@ -319,6 +331,51 @@ const SocialPage: React.FC = () => {
       setFriendSearchError(addError instanceof Error ? addError.message : 'Failed to add friend');
     } finally {
       setAddingFriendUsername('');
+    }
+  };
+
+  const handleSendFriendRequest = async (receiverUsername: string) => {
+    const token = getAuthToken();
+
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      setAddingFriendUsername(receiverUsername);
+      setFriendSearchError('');
+
+      await sendFriendRequest(receiverUsername);
+      await fetchFriendRequests().then(setFriendRequests);
+    } catch (requestError) {
+      setFriendSearchError(requestError instanceof Error ? requestError.message : 'Failed to send friend request');
+    } finally {
+      setAddingFriendUsername('');
+    }
+  };
+
+  const handleAcceptFriendRequest = async (requestId: number) => {
+    try {
+      await acceptFriendRequest(requestId);
+      await Promise.all([
+        fetchFriendRequests().then(setFriendRequests),
+        fetchFriendContacts().then((contacts) => {
+          setFriendContacts(contacts);
+          setSelectedFriendUsername((current) => current || contacts[0]?.username || '');
+        }),
+      ]);
+    } catch (error) {
+      setFriendSearchError(error instanceof Error ? error.message : 'Failed to accept request');
+    }
+  };
+
+  const handleDeclineFriendRequest = async (requestId: number) => {
+    try {
+      await declineFriendRequest(requestId);
+      setFriendRequests((previous) => previous.filter((request) => request.id !== requestId));
+    } catch (error) {
+      setFriendSearchError(error instanceof Error ? error.message : 'Failed to decline request');
     }
   };
 
@@ -507,8 +564,8 @@ const SocialPage: React.FC = () => {
 
           <aside className='space-y-6'>
             <div className='border-4 border-[#483d30] bg-[#1a0f10] p-6'>
-              <h2 className='text-3xl font-extrabold text-[#f6e8ab]'>Find Friends</h2>
-              <p className='mt-2 text-[#a89060]'>Search people by username or name and add them to your friends list.</p>
+              <h2 className='text-3xl font-extrabold text-[#f6e8ab]'>{isProfessional ? 'Find Contacts' : 'Find Friends'}</h2>
+              <p className='mt-2 text-[#a89060]'>Search people by username or name and add them to your {isProfessional ? 'contacts' : 'friends'} list.</p>
 
               <div className='mt-5 space-y-4'>
                 <input
@@ -546,21 +603,69 @@ const SocialPage: React.FC = () => {
                           {friend.isFriend ? 'Added' : 'New'}
                         </span>
                       </div>
-                      <button
-                        type='button'
-                        onClick={() => void handleAddFriend(friend.username)}
-                        disabled={friend.isFriend || addingFriendUsername === friend.username}
-                        className='mt-4 w-full border-2 border-[#fff3b0] px-4 py-2 font-semibold text-[#fff3b0] transition hover:bg-[#fff3b0] hover:text-[#540b0e] disabled:cursor-not-allowed disabled:border-[#483d30] disabled:text-[#483d30]'
-                      >
-                        {addingFriendUsername === friend.username
-                          ? 'Adding...'
-                          : friend.isFriend
-                            ? 'Already Friends'
-                            : 'Add as Friend'}
-                      </button>
+                      <div className='mt-4 grid gap-2 sm:grid-cols-2'>
+                        <button
+                          type='button'
+                          onClick={() => void handleAddFriend(friend.username)}
+                          disabled={friend.isFriend || addingFriendUsername === friend.username}
+                          className='border-2 border-[#fff3b0] px-4 py-2 font-semibold text-[#fff3b0] transition hover:bg-[#fff3b0] hover:text-[#540b0e] disabled:cursor-not-allowed disabled:border-[#483d30] disabled:text-[#483d30]'
+                        >
+                          {addingFriendUsername === friend.username
+                            ? 'Adding...'
+                            : friend.isFriend
+                              ? 'Already Friends'
+                              : 'Add as Friend'}
+                        </button>
+                        <button
+                          type='button'
+                          onClick={() => void handleSendFriendRequest(friend.username)}
+                          disabled={friend.isFriend || addingFriendUsername === friend.username}
+                          className='border-2 border-[#483d30] px-4 py-2 font-semibold text-[#a89060] transition hover:border-[#fff3b0] hover:text-[#fff3b0] disabled:cursor-not-allowed disabled:text-[#483d30]'
+                        >
+                          Request Friend
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+
+            <div className='border-4 border-[#483d30] bg-[#1a0f10] p-6'>
+              <h2 className='text-3xl font-extrabold text-[#f6e8ab]'>Friend Requests</h2>
+              <p className='mt-2 text-[#a89060]'>Incoming requests from other people on Festivo.</p>
+              <div className='mt-5 space-y-3'>
+                {friendRequests.length === 0 ? (
+                  <div className='border border-[#483d30] bg-[#120707] px-4 py-3 text-[#a89060]'>No pending requests.</div>
+                ) : (
+                  friendRequests.map((request) => (
+                    <div key={request.id} className='border-2 border-[#483d30] bg-[#120707] p-4'>
+                      <div className='flex items-start justify-between gap-3'>
+                        <div>
+                          <h3 className='text-lg font-bold text-[#fff3b0]'>{request.senderName}</h3>
+                          <p className='text-sm text-[#a89060]'>@{request.senderUsername}</p>
+                        </div>
+                        <span className='border border-[#483d30] px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-[#a89060]'>Pending</span>
+                      </div>
+                      <div className='mt-4 grid gap-2 sm:grid-cols-2'>
+                        <button
+                          type='button'
+                          onClick={() => void handleAcceptFriendRequest(request.id)}
+                          className='border-2 border-[#fff3b0] px-4 py-2 font-semibold text-[#fff3b0] transition hover:bg-[#fff3b0] hover:text-[#540b0e]'
+                        >
+                          Accept
+                        </button>
+                        <button
+                          type='button'
+                          onClick={() => void handleDeclineFriendRequest(request.id)}
+                          className='border-2 border-[#483d30] px-4 py-2 font-semibold text-[#a89060] transition hover:border-[#fff3b0] hover:text-[#fff3b0]'
+                        >
+                          Decline
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 

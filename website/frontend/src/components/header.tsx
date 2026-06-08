@@ -79,7 +79,7 @@ const Header: React.FC = () => {
                     <div key={label} className='flex-1 flex justify-center place-items-center'>
                         <Link to={`/${label.toLowerCase()}`} className={navButtonClass}>
                             <img src={icon} alt="" className='h-5 w-5 object-contain group-active:mix-blend-color' aria-hidden='true' />
-                            <span>{label}</span>
+                            <span>{label === 'Friends' && isProfessional ? 'Contacts' : label}</span>
                         </Link>
                     </div>
                 ))}
@@ -99,9 +99,17 @@ const Header: React.FC = () => {
                         <button
                             type='button'
                             onClick={handleLogout}
-                            className='transition duration-333 ease-in-out border-2 border-[#fff3b0] px-4 py-2 text-lg text-[#fff3b0] hover:bg-[#fff3b0] hover:text-[#540b0e]'
+                            className='transition duration-333 ease-in-out text-xl text-[#fff3b0] hover:cursor-pointer hover:scale-110 flex items-center gap-1 group'
                         >
-                            Logout
+                            <div className="relative h-7 w-7">
+                                <div className="flex h-7 w-7 items-center justify-center rounded-full border border-[#fff3b0] bg-[#1a0f10] text-sm font-bold text-[#fff3b0]">
+                                    ×
+                                </div>
+                                <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 40 40">
+                                    <circle cx="20" cy="20" r="19" fill="none" stroke="#fff3b0" strokeWidth="3" strokeDasharray="120" strokeDashoffset="120" className="transition-all duration-700 ease-in-out group-hover:[stroke-dashoffset:0]" />
+                                </svg>
+                            </div>
+                            <span className='mb-[4px]'>Logout</span>
                         </button>
                     </>
                 ) : (

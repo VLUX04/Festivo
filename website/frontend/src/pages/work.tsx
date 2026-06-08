@@ -3,6 +3,8 @@ import PageLayout from '../components/pageLayout';
 import { useNavigate } from 'react-router-dom';
 import { getAuthToken, getStoredUser, isProfessionalRole } from '../utils/auth.ts';
 
+const API_BASE_URL = 'http://localhost:3000';
+
 type WorkOpportunity = {
   id: number;
   title: string;
@@ -55,7 +57,16 @@ const WorkPage: React.FC = () => {
         setLoading(true);
         setError('');
 
-        const response = await fetch('http://localhost:3000/work/opportunities');
+        const token = getAuthToken();
+        const headers: HeadersInit = token
+          ? {
+              Authorization: `Bearer ${token}`,
+            }
+          : {};
+
+        const response = await fetch('http://localhost:3000/work/opportunities', {
+          headers,
+        });
         const data = await response.json();
 
         if (!response.ok || !data.success) {
@@ -122,7 +133,11 @@ const WorkPage: React.FC = () => {
       setFormData(defaultForm);
       setActiveTab('browse');
 
-      const refreshed = await fetch('http://localhost:3000/work/opportunities');
+      const refreshed = await fetch('http://localhost:3000/work/opportunities', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       const refreshedData = await refreshed.json();
       if (refreshed.ok && refreshedData.success) {
         setOpportunities(refreshedData.opportunities as WorkOpportunity[]);
@@ -134,7 +149,7 @@ const WorkPage: React.FC = () => {
     }
   };
 
-  const handleOpenChat = async (posterUsername: string) => {
+  const handleOpenChat = async (opportunity: WorkOpportunity) => {
     const token = getAuthToken();
 
     if (!token) {
@@ -143,22 +158,34 @@ const WorkPage: React.FC = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:3000/chat/initiate', {
+      const initiateResponse = await fetch(`${API_BASE_URL}/chat/initiate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ friendUsername: posterUsername }),
+        body: JSON.stringify({ friendUsername: opportunity.posterUsername }),
       });
 
-      const data = await response.json();
+      const initiateData = await initiateResponse.json();
 
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || 'Unable to open chat');
+      if (!initiateResponse.ok || !initiateData.success) {
+        throw new Error(initiateData.message || 'Unable to open chat');
       }
 
-      navigate(`/friends?chat=${encodeURIComponent(posterUsername)}`);
+      await fetch(`${API_BASE_URL}/chat/send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          chatId: String(initiateData.chatId),
+          content: `Hi, I'm interested in your job opportunity: ${opportunity.title}.`,
+        }),
+      });
+
+      navigate(`/friends?chat=${encodeURIComponent(opportunity.posterUsername)}`);
     } catch (chatError) {
       setError(chatError instanceof Error ? chatError.message : 'Unable to open chat');
     }
@@ -278,7 +305,7 @@ const WorkPage: React.FC = () => {
 
                   <button
                     type='button'
-                    onClick={() => void handleOpenChat(opportunity.posterUsername)}
+                    onClick={() => void handleOpenChat(opportunity)}
                     className='border-2 border-[#fff3b0] bg-[#fff3b0] px-4 py-3 font-bold text-[#540b0e] transition hover:bg-[#1a0f10] hover:text-[#fff3b0]'
                   >
                     Chat with poster

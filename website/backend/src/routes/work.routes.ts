@@ -1,14 +1,44 @@
 import { Router } from 'express';
+import jwt from 'jsonwebtoken';
 
 import { loginMiddleware } from '../middleware/auth.middleware.js';
-import { createWorkOpportunity, listWorkOpportunities } from '../services/work.service.js';
+import { SECRET_KEY } from '../services/auth.service.js';
+import { createWorkOpportunity, listMyWorkOpportunities, listWorkOpportunities } from '../services/work.service.js';
 
 const router = Router();
 
-router.get('/opportunities', async (_req, res) => {
+router.get('/opportunities', async (req: any, res) => {
   try {
-    const opportunities = await listWorkOpportunities();
+    const authorization = req.headers['authorization'];
+    const token = authorization && authorization.split(' ')[1];
+    const viewerUsername = token
+      ? (() => {
+          try {
+            const payload = jwt.verify(token, SECRET_KEY) as { username?: string };
+            return typeof payload.username === 'string' ? payload.username : undefined;
+          } catch {
+            return undefined;
+          }
+        })()
+      : undefined;
+
+    const opportunities = await listWorkOpportunities(viewerUsername);
     res.status(200).json({ success: true, opportunities });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+router.get('/opportunities/mine', loginMiddleware, async (req: any, res) => {
+  try {
+    const result = await listMyWorkOpportunities(req.user.username);
+
+    if (!result.ok) {
+      return res.status(result.status).json({ success: false, message: result.message });
+    }
+
+    res.status(200).json({ success: true, opportunities: result.opportunities });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: 'Internal server error' });

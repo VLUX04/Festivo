@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import type { Event } from './event';
 import { fetchFriendContacts, shareItemWithFriend, type FriendContact } from '../utils/community.ts';
 
+const actionButtonClass = 'min-w-[170px] border-2 border-[#fff3b0] px-5 py-3 font-bold text-[#fff3b0] transition hover:bg-[#fff3b0] hover:text-[#1a0f10] disabled:cursor-not-allowed disabled:border-[#483d30] disabled:text-[#483d30]';
+
 type EventDetailsModalProps = {
   event: Event | null;
   onClose: () => void;
@@ -26,18 +28,31 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
   }
 
   const handleShareToFriend = async () => {
-    if (!selectedFriendUsername.trim()) {
+    if (!selectedFriendUsername.trim() || event.id == null) {
       return;
     }
 
-    await shareItemWithFriend({
-      friendUsername: selectedFriendUsername.trim(),
-      itemType: 'event',
-      itemId: event.id ?? 0,
-      title: event.title,
-      url: `/events?eventId=${event.id ?? ''}`,
-      body: event.description,
-    });
+    try {
+      await shareItemWithFriend({
+        friendUsername: selectedFriendUsername.trim(),
+        itemType: 'event',
+        itemId: event.id,
+        title: event.title,
+        url: `/events?eventId=${event.id}`,
+        body: event.description,
+      });
+    } catch (error) {
+      console.error('Failed to share event', error);
+    }
+  };
+
+  const handleTicketClick = () => {
+    if (event.ticketLink) {
+      window.open(event.ticketLink, '_blank', 'noreferrer');
+      return;
+    }
+
+    window.alert('Ticket link not available for this event yet.');
   };
 
   return (
@@ -87,33 +102,34 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
 
           <p className='leading-8 text-[#f1e2ba]'>{event.description}</p>
 
-          <div className='flex flex-col gap-3 sm:flex-row'>
-            <button
-              type='button'
-              onClick={() => {
-                if (onSeeOnMap) {
-                  onSeeOnMap(event);
-                  return;
-                }
+          <div className='space-y-4 border-t border-[#483d30] pt-5'>
+            <div className='flex flex-col items-center gap-3 sm:flex-row sm:justify-center'>
+              <button
+                type='button'
+                onClick={() => {
+                  if (onSeeOnMap) {
+                    onSeeOnMap(event);
+                    return;
+                  }
 
-                navigate(`/map?eventId=${event.id ?? ''}`);
-              }}
-              className='border-2 border-[#fff3b0] bg-[#fff3b0] px-5 py-3 font-bold text-[#540b0e] transition hover:bg-[#1a0f10] hover:text-[#fff3b0]'
-            >
-              See on Map
-            </button>
-            {event.ticketLink ? (
-              <a
-                href={event.ticketLink}
-                target='_blank'
-                rel='noreferrer'
-                className='border-2 border-[#483d30] px-5 py-3 text-center font-bold text-[#fff3b0] transition hover:border-[#fff3b0]'
+                  navigate(`/map?eventId=${event.id ?? ''}`);
+                }}
+                className={`${actionButtonClass} bg-[#fff3b0] text-[#540b0e] hover:bg-[#1a0f10]`}
               >
-                Buy Tickets
-              </a>
-            ) : null}
-            <div className='flex flex-1 flex-col gap-3 rounded-none border-2 border-[#483d30] bg-[#120707] p-3 sm:max-w-sm'>
-              <label className='text-sm font-semibold uppercase tracking-[0.2em] text-[#fff3b0]'>Share to friend</label>
+                See on Map
+              </button>
+              <button
+                type='button'
+                onClick={handleTicketClick}
+                className={`${actionButtonClass} bg-transparent`}
+              >
+                Buy Ticket
+              </button>
+            </div>
+
+            <div className='grid gap-4 md:grid-cols-[1fr_auto]'>
+              <div className='rounded-none border-2 border-[#483d30] bg-[#120707] p-4'>
+                <label className='mb-2 block text-sm font-semibold uppercase tracking-[0.2em] text-[#fff3b0]'>Share to friend</label>
               <select
                 value={selectedFriendUsername}
                 onChange={(event) => setSelectedFriendUsername(event.target.value)}
@@ -129,11 +145,12 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                   ))
                 )}
               </select>
+              </div>
               <button
                 type='button'
                 onClick={() => void handleShareToFriend()}
-                disabled={!selectedFriendUsername}
-                className='border-2 border-[#fff3b0] px-5 py-3 font-bold text-[#fff3b0] transition hover:bg-[#fff3b0] hover:text-[#1a0f10] disabled:cursor-not-allowed disabled:border-[#483d30] disabled:text-[#483d30]'
+                disabled={!selectedFriendUsername || event.id == null}
+                className='min-w-[170px] self-center border-2 border-[#fff3b0] px-5 py-3 font-bold text-[#fff3b0] transition hover:bg-[#fff3b0] hover:text-[#1a0f10] disabled:cursor-not-allowed disabled:border-[#483d30] disabled:text-[#483d30]'
               >
                 Share Event
               </button>

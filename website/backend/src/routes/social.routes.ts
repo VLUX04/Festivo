@@ -7,9 +7,13 @@ import {
   addPublicationComment,
   addFriend,
   createPublication,
+  acceptFriendRequest,
+  declineFriendRequest,
   followProfessional,
   getSocialFeed,
+  listIncomingFriendRequests,
   listFriends,
+  sendFriendRequest,
   sharePublication,
   searchFriends,
   togglePublicationFavorite,
@@ -121,6 +125,67 @@ router.post('/follows', loginMiddleware, async (req: any, res) => {
   try {
     const { professionalUsername } = req.body;
     const result = await followProfessional(req.user.username, professionalUsername);
+
+    if (!result.ok) {
+      return res.status(result.status).json({ success: false, message: result.message });
+    }
+
+    res.status(200).json({ success: true, message: result.message });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+router.get('/friend-requests', loginMiddleware, async (req: any, res) => {
+  try {
+    const result = await listIncomingFriendRequests(req.user.username);
+
+    if (!result.ok) {
+      return res.status(result.status).json({ success: false, message: result.message });
+    }
+
+    res.status(200).json({ success: true, requests: result.requests });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+router.post('/friend-requests', loginMiddleware, async (req: any, res) => {
+  try {
+    const { receiverUsername } = req.body;
+    const result = await sendFriendRequest(req.user.username, receiverUsername);
+
+    if (!result.ok) {
+      return res.status(result.status).json({ success: false, message: result.message });
+    }
+
+    res.status(201).json({ success: true, message: result.message, requestId: result.requestId });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+router.post('/friend-requests/:id/accept', loginMiddleware, async (req: any, res) => {
+  try {
+    const result = await acceptFriendRequest(req.user.username, Number(req.params.id));
+
+    if (!result.ok) {
+      return res.status(result.status).json({ success: false, message: result.message });
+    }
+
+    res.status(200).json({ success: true, message: result.message });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+router.post('/friend-requests/:id/decline', loginMiddleware, async (req: any, res) => {
+  try {
+    const result = await declineFriendRequest(req.user.username, Number(req.params.id));
 
     if (!result.ok) {
       return res.status(result.status).json({ success: false, message: result.message });
