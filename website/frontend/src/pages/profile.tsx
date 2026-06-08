@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import editIcon from '../icons/edit-profile.png';
 import editDarkIcon from '../icons/edit-profile-dark.png';
 import { getAuthToken, getStoredUser, isAuthenticated } from '../utils/auth';
-import { acceptFriendRequest, declineFriendRequest, fetchFriendRequests, useCommunityState, type FriendRequest } from '../utils/community.ts';
+import { useCommunityState } from '../utils/community.ts';
 
 const ProfilePage: React.FC = () => {
 
@@ -12,8 +12,6 @@ const ProfilePage: React.FC = () => {
     const user = React.useMemo(() => getStoredUser(), []);
     const isLoggedIn = isAuthenticated();
     const communityState = useCommunityState();
-    const [friendRequests, setFriendRequests] = React.useState<FriendRequest[]>([]);
-    const [requestError, setRequestError] = React.useState('');
     const [myWorkOpportunities, setMyWorkOpportunities] = React.useState<Array<{
         id: number;
         title: string;
@@ -28,7 +26,6 @@ const ProfilePage: React.FC = () => {
             return;
         }
 
-        void fetchFriendRequests().then(setFriendRequests);
         const token = getAuthToken();
 
         if (token) {
@@ -61,26 +58,6 @@ const ProfilePage: React.FC = () => {
     const displayPreferences = user?.preferences ?? [];
     const attendedEvents = communityState.attendedEvents;
     const publications = communityState.posts.filter((post) => post.isMine);
-
-    const handleAcceptFriendRequest = async (requestId: number) => {
-        try {
-            setRequestError('');
-            await acceptFriendRequest(requestId);
-            await fetchFriendRequests().then(setFriendRequests);
-        } catch (error) {
-            setRequestError(error instanceof Error ? error.message : 'Failed to accept request');
-        }
-    };
-
-    const handleDeclineFriendRequest = async (requestId: number) => {
-        try {
-            setRequestError('');
-            await declineFriendRequest(requestId);
-            setFriendRequests((previous) => previous.filter((request) => request.id !== requestId));
-        } catch (error) {
-            setRequestError(error instanceof Error ? error.message : 'Failed to decline request');
-        }
-    };
 
     return(
         <PageLayout>
@@ -119,40 +96,6 @@ const ProfilePage: React.FC = () => {
                         )) : (
                             <p className='text-[#a89060] text-lg'>No preferences set yet.</p>
                         )}
-                    </div>
-
-                    <div className='mt-10 border-4 border-[#483d30] bg-[#120707] p-6'>
-                        <div className='mb-4 flex items-end justify-between gap-4'>
-                            <div>
-                                <h2 className='text-3xl font-bold text-[#fff3b0]'>Friend Requests</h2>
-                                <p className='text-[#a89060]'>Review people who want to connect with you.</p>
-                            </div>
-                            <span className='text-sm uppercase tracking-[0.2em] text-[#a89060]'>{friendRequests.length} pending</span>
-                        </div>
-                        {requestError ? <p className='mb-4 text-[#ff8f8f]'>{requestError}</p> : null}
-                        <div className='space-y-3'>
-                            {friendRequests.length === 0 ? (
-                                <p className='text-[#a89060]'>No pending requests.</p>
-                            ) : friendRequests.map((request) => (
-                                <div key={request.id} className='border-2 border-[#483d30] bg-[#1a0f10] p-4'>
-                                    <div className='flex items-start justify-between gap-3'>
-                                        <div>
-                                            <h3 className='text-xl font-bold text-[#fff3b0]'>{request.senderName}</h3>
-                                            <p className='text-[#a89060]'>@{request.senderUsername}</p>
-                                            <p className='text-xs text-[#8b7355]'>{new Date(request.createdAt).toLocaleString()}</p>
-                                        </div>
-                                        <div className='flex gap-2'>
-                                            <button type='button' onClick={() => void handleAcceptFriendRequest(request.id)} className='border-2 border-[#fff3b0] px-4 py-2 text-sm font-semibold text-[#fff3b0] transition hover:bg-[#fff3b0] hover:text-[#1a0f10]'>
-                                                Accept
-                                            </button>
-                                            <button type='button' onClick={() => void handleDeclineFriendRequest(request.id)} className='border-2 border-[#483d30] px-4 py-2 text-sm font-semibold text-[#a89060] transition hover:border-[#fff3b0] hover:text-[#fff3b0]'>
-                                                Decline
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
                     </div>
 
                     <section className='mt-10 space-y-10'>
