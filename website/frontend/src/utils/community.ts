@@ -57,7 +57,7 @@ type CommunityFeedResponse = {
   attendedEvents: AttendedEvent[];
 };
 
-type ShareableItemType = 'publication' | 'event' | 'work-opportunity';
+// ShareableItemType removed — sharing handled inline in UI components now
 
 export type FriendContact = {
   chatId?: number | null;
@@ -499,29 +499,7 @@ export const addCommentToPost = (postId: number, body: string): void => {
     .catch(() => undefined);
 };
 
-export const shareItemWithFriend = (payload: {
-  friendUsername: string;
-  itemType: ShareableItemType;
-  itemId: number;
-  title: string;
-  url: string;
-  body?: string;
-}): Promise<void> => {
-  const headers = authHeaders();
-
-  if (!headers) {
-    return Promise.resolve();
-  }
-
-  return requestJson('/chat/share', {
-    method: 'POST',
-    headers: {
-      ...headers,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  }).then(() => undefined);
-};
+// shareItemWithFriend removed — sharing now implemented directly where needed
 
 export const sendFriendRequest = (receiverUsername: string): Promise<void> => {
   const headers = authHeaders();

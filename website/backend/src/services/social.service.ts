@@ -8,6 +8,148 @@ type PublicationPayload = {
   mediaType?: 'image' | 'video';
 };
 
+type PublicProfileReview = {
+  id: number;
+  reviewerUsername: string;
+  reviewerName: string;
+  rating: number;
+  information: string;
+  sentDate: string;
+};
+
+const getProfileType = (userRole: string | null | undefined, genre: string | null | undefined): string => {
+  if (userRole === 'customer') {
+    return 'Event Lover';
+  }
+
+  return genre ? 'Artist' : 'Promoter';
+};
+
+export async function getPublicProfile(viewerUsername: string | undefined, targetUsername: string) {
+  const viewer = viewerUsername ? await getUserByUsername(viewerUsername) : null;
+  const target = await getUserByUsername(targetUsername);
+
+  if (!target) {
+    return { ok: false as const, status: 404, message: 'User not found' };
+  }
+
+  const profileResult = await pool.query(
+    `SELECT
+        u.id,
+        u.username,
+        COALESCE(u.name, u.username) AS name,
+        u.email,
+        u.role,
+        u.information AS bio,
+        u.location,
+        pp.is_verified AS "isVerified",
+        pp.genre,
+        pp.rating
+     FROM users u
+     LEFT JOIN professional_profile pp ON pp.user_id = u.id
+     WHERE u.username = $1`,
+    [targetUsername],
+  );
+
+  if (profileResult.rowCount === 0) {
+    return { ok: false as const, status: 404, message: 'User not found' };
+  }
+
+  const profile = profileResult.rows[0];
+
+  const reviewsResult = profile.role === 'professional'
+    ? await pool.query(
+        `SELECT
+            pr.user_id AS id,
+            reviewer.username AS "reviewerUsername",
+            COALESCE(reviewer.name, reviewer.username) AS "reviewerName",
+            pr.rating,
+            pr.information,
+            pr.sent_date AS "sentDate"
+         FROM professional_review pr
+         JOIN users reviewer ON reviewer.id = pr.user_id
+         WHERE pr.professional_id = $1
+         ORDER BY pr.sent_date DESC, pr.user_id DESC`,
+        [profile.id],
+      )
+    : { rows: [] as PublicProfileReview[] };
+
+  const preferencesResult = profile.role === 'customer'
+    ? await pool.query(
+        `SELECT cp.tag_name AS tag
+         FROM customer_preferences cp
+         WHERE cp.customer_id = $1
+         ORDER BY cp.tag_name ASC`,
+        [profile.id],
+      )
+    : { rows: [] as { tag: string }[] };
+
+  const publicationCountResult = await pool.query(
+    'SELECT COUNT(*)::int AS count FROM publication WHERE user_id = $1',
+    [profile.id],
+  );
+
+  return {
+    ok: true as const,
+    profile: {
+      id: profile.id,
+      username: profile.username,
+      name: profile.name,
+      email: profile.email,
+      role: profile.role,
+      bio: profile.bio,
+      location: profile.location,
+      profileType: getProfileType(profile.role, profile.genre),
+      isVerified: profile.isVerified ?? false,
+      genre: profile.genre,
+      rating: profile.rating,
+      preferences: preferencesResult.rows.map((entry) => entry.tag),
+      publicationCount: Number(publicationCountResult.rows[0]?.count || 0),
+      isMe: viewer?.id === profile.id,
+      canReview: Boolean(viewer && viewer.role === 'customer' && profile.role === 'professional' && viewer.id !== profile.id),
+      reviews: reviewsResult.rows as PublicProfileReview[],
+    },
+  };
+}
+
+export async function saveProfessionalReview(username: string, professionalUsername: string, rating: number, information: string) {
+  const reviewer = await getUserByUsername(username);
+  const target = await getUserByUsername(professionalUsername);
+
+  if (!reviewer || !target) {
+    return { ok: false as const, status: 404, message: 'User not found' };
+  }
+
+  if (reviewer.role !== 'customer') {
+    return { ok: false as const, status: 403, message: 'Only event lovers can review professionals' };
+  }
+
+  if (target.role !== 'professional') {
+    return { ok: false as const, status: 400, message: 'You can only review professionals' };
+  }
+
+  if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+    return { ok: false as const, status: 400, message: 'Rating must be between 1 and 5' };
+  }
+
+  if (!information.trim()) {
+    return { ok: false as const, status: 400, message: 'Review text cannot be empty' };
+  }
+
+  await pool.query('INSERT INTO customer (customer_id) VALUES ($1) ON CONFLICT DO NOTHING', [reviewer.id]);
+
+  const result = await pool.query(
+    `INSERT INTO professional_review (user_id, professional_id, rating, sent_date, information)
+     VALUES ($1, $2, $3, CURRENT_DATE, $4)
+     ON CONFLICT (user_id, professional_id)
+     DO UPDATE SET rating = EXCLUDED.rating, sent_date = EXCLUDED.sent_date, information = EXCLUDED.information
+     RETURNING user_id, professional_id, rating, sent_date, information`,
+    [reviewer.id, target.id, rating, information.trim()],
+  );
+
+  return { ok: true as const, review: result.rows[0] };
+}
+
 const publicationCommentsQuery = `
   SELECT COALESCE(
     json_agg(
@@ -44,9 +186,10 @@ export async function getSocialFeed(username?: string) {
 
   const posts = await pool.query(
     `SELECT
-        p.id,
-        p.user_id,
-        COALESCE(u.name, u.username) AS author,
+      p.id,
+      p.user_id,
+      u.username AS username,
+      COALESCE(u.name, u.username) AS author,
         ('https://picsum.photos/seed/user-' || u.id || '/120/120') AS avatar,
         p.media AS image,
         COALESCE(p.media_type, CASE
@@ -294,28 +437,6 @@ export async function listFriends(username: string) {
     return { ok: false as const, status: 404, message: 'User not found' };
   }
 
-  if (currentUser.role === 'professional') {
-    const result = await pool.query(
-      `SELECT DISTINCT
-          u.id AS "friendId",
-          u.username,
-          COALESCE(u.name, u.username) AS name,
-          u.role,
-          c.id AS "chatId"
-       FROM chat c
-       JOIN chat_participants cp1 ON c.id = cp1.chat_id
-       JOIN chat_participants cp2 ON c.id = cp2.chat_id
-       JOIN users u ON cp2.user_id = u.id
-       WHERE cp1.user_id = $1
-         AND cp2.user_id != $1
-         AND u.role = $2
-       ORDER BY name ASC, username ASC`,
-      [currentUser.id, currentUser.role],
-    );
-
-    return { ok: true as const, friends: result.rows as FriendRow[] };
-  }
-
   const result = await pool.query(
     `SELECT
         u.id AS "friendId",
@@ -367,7 +488,6 @@ export async function searchFriends(username: string, query: string) {
         ) AS "isFriend"
      FROM users u
      WHERE u.id <> $1
-       AND u.role = 'customer'
        AND (
          u.username ILIKE $2
          OR u.name ILIKE $2
@@ -386,10 +506,6 @@ export async function listIncomingFriendRequests(username: string) {
 
   if (!currentUser) {
     return { ok: false as const, status: 404, message: 'User not found' };
-  }
-
-  if (currentUser.role !== 'customer') {
-    return { ok: true as const, requests: [] as FriendRequestRow[] };
   }
 
   const result = await pool.query(
@@ -419,10 +535,6 @@ export async function sendFriendRequest(username: string, receiverUsername: stri
 
   if (sender.id === receiver.id) {
     return { ok: false as const, status: 400, message: 'You cannot request yourself' };
-  }
-
-  if (sender.role !== 'customer' || receiver.role !== 'customer') {
-    return { ok: false as const, status: 400, message: 'Friend requests are only available between customer accounts' };
   }
 
   await pool.query('INSERT INTO customer (customer_id) VALUES ($1) ON CONFLICT DO NOTHING', [sender.id]);
@@ -487,6 +599,8 @@ export async function acceptFriendRequest(username: string, requestId: number) {
 
   try {
     await client.query('BEGIN');
+    await client.query('INSERT INTO customer (customer_id) VALUES ($1) ON CONFLICT DO NOTHING', [pendingRequest.sender_id]);
+    await client.query('INSERT INTO customer (customer_id) VALUES ($1) ON CONFLICT DO NOTHING', [pendingRequest.receiver_id]);
     await client.query('INSERT INTO friends (user1_id, user2_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [user1, user2]);
     await client.query('UPDATE friend_requests SET status = $1 WHERE id = $2', ['accepted', requestId]);
     await client.query('COMMIT');

@@ -3,6 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import PageLayout from '../components/pageLayout';
 import { getStoredUser, isAuthenticated, updateStoredUser } from '../utils/auth';
 
+type ProfileDetails = {
+    profileType: string;
+    role: string;
+};
+
+const API_BASE_URL = 'http://localhost:3000';
+
 const suggestionTags = [
     'Techno',
     'House',
@@ -24,6 +31,7 @@ const EditProfilePage: React.FC = () => {
     const navigate = useNavigate();
     const user = React.useMemo(() => getStoredUser(), []);
     const loggedIn = isAuthenticated();
+    const [profileDetails, setProfileDetails] = React.useState<ProfileDetails | null>(null);
 
     const [formData, setFormData] = React.useState({
         username: user?.username ?? '',
@@ -42,9 +50,42 @@ const EditProfilePage: React.FC = () => {
         }
     }, [loggedIn, navigate]);
 
+    React.useEffect(() => {
+        const loadProfileDetails = async () => {
+            if (!user?.username) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/social/profiles/${encodeURIComponent(user.username)}`, {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
+                    },
+                });
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    setProfileDetails({
+                        profileType: data.profile.profileType,
+                        role: data.profile.role,
+                    });
+                }
+            } catch {
+                setProfileDetails(null);
+            }
+        };
+
+        void loadProfileDetails();
+    }, [user?.username]);
+
     if (!loggedIn) {
         return null;
     }
+
+    const profileType = profileDetails?.profileType || (user?.role === 'customer' ? 'Event Lover' : 'Professional');
+    const isEventLover = profileType === 'Event Lover';
+    const isArtist = profileType === 'Artist';
+    const isPromoter = profileType === 'Promoter';
 
     const updateField = (field: keyof typeof formData, value: string | string[]) => {
         setFormData((previous) => ({
@@ -131,7 +172,7 @@ const EditProfilePage: React.FC = () => {
                 <form onSubmit={handleSubmit} className="w-full max-w-5xl bg-[#1a0f10] border-4 border-[#fff3b0] shadow-[15px_15px_0_0_#231c16] p-8 text-[#fff3b0]">
                     <div className="flex flex-col gap-2 border-b-3 border-[#fff3b0] pb-6 mb-8">
                         <h1 className="text-4xl font-bold">EDIT PROFILE</h1>
-                        <p className="text-[#a89060]">Update your account details, avatar, and interests.</p>
+                        <p className="text-[#a89060]">Update your {isArtist ? 'artist' : isPromoter ? 'promoter' : 'event lover'} account details, avatar, and interests.</p>
                     </div>
 
                     <div className="grid gap-8 lg:grid-cols-[280px_1fr]">
@@ -156,6 +197,10 @@ const EditProfilePage: React.FC = () => {
                         </div>
 
                         <div className="grid gap-5 md:grid-cols-2">
+                            <div className="md:col-span-2 border-2 border-[#483d30] bg-[#120707] px-4 py-3 text-[#a89060]">
+                                Editing as <span className="text-[#fff3b0] font-semibold">{profileType}</span>
+                            </div>
+
                             <label className="block">
                                 <span className="block text-sm text-[#a89060] mb-2">Username</span>
                                 <input
@@ -212,8 +257,8 @@ const EditProfilePage: React.FC = () => {
 
                             <div className="md:col-span-2 space-y-4">
                                 <div>
-                                    <h2 className="text-2xl font-bold mb-2">Preferences</h2>
-                                    <p className="text-[#a89060]">Pick up to 10 tags for your profile.</p>
+                                    <h2 className="text-2xl font-bold mb-2">{isEventLover ? 'Preferences' : 'Specialties'}</h2>
+                                    <p className="text-[#a89060]">{isEventLover ? 'Pick up to 10 tags for your profile.' : 'Pick up to 10 tags that define your public profile.'}</p>
                                 </div>
 
                                 <div className="flex flex-wrap gap-2">

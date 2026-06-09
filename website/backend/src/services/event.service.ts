@@ -6,6 +6,8 @@ export const getEventsQuery = `
         e.id,
         e.title,
         e.event_type AS "eventType",
+		u.username AS "promoterUsername",
+		COALESCE(u.name, u.username) AS promoter,
         e.venue,
         e.latitude,
         e.longitude,
@@ -16,11 +18,11 @@ export const getEventsQuery = `
         e.description,
         e.price,
 		e.ticket_link AS "ticketLink",
-		NULL::text AS promoter,
 		''::text AS src,
 		COALESCE(e.title, e.description, 'Event') AS alt,
 		0::int AS "attendingCount"
     FROM events e
+    LEFT JOIN users u ON u.id = e.publisher_id
     ORDER BY e.sdate ASC, e.event_time ASC, e.id ASC
 `;
 

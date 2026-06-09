@@ -129,26 +129,26 @@ INSERT INTO event_tags (event_id, tag_name) VALUES (19, 'Dance');
 INSERT INTO event_tags (event_id, tag_name) VALUES (20, 'Classical');
 
 INSERT INTO images (id, url, alt_text) VALUES
-(1, 'https://picsum.photos/seed/event1/900/500', 'Jazz Under the Garden Lights'),
-(2, 'https://picsum.photos/seed/event2/900/500', 'Modern Forms'),
-(3, 'https://picsum.photos/seed/event3/900/500', 'Fairy Tale Symphony'),
-(4, 'https://picsum.photos/seed/event4/900/500', 'Future Work Summit'),
-(5, 'https://picsum.photos/seed/event5/900/500', 'Lens Craft Workshop'),
-(6, 'https://picsum.photos/seed/event6/900/500', 'Night at the Colosseum'),
-(7, 'https://picsum.photos/seed/event7/900/500', 'Summer Culture Fest'),
-(8, 'https://picsum.photos/seed/event8/900/500', 'Beethoven by the Bay'),
-(9, 'https://picsum.photos/seed/event9/900/500', 'Finance Forward'),
-(10, 'https://picsum.photos/seed/event10/900/500', 'Open Air Cinema Classics'),
-(11, 'https://picsum.photos/seed/event11/900/500', 'Hands On Sculpture Lab'),
-(12, 'https://picsum.photos/seed/event12/900/500', 'Indie Dev Expo'),
-(13, 'https://picsum.photos/seed/event13/900/500', 'Founder Launch Day'),
-(14, 'https://picsum.photos/seed/event14/900/500', 'Runway Dispatch'),
-(15, 'https://picsum.photos/seed/event15/900/500', 'Global Sound Stage'),
-(16, 'https://picsum.photos/seed/event16/900/500', 'Gastronomy at the Louvre'),
-(17, 'https://picsum.photos/seed/event17/900/500', 'Championship Finals'),
-(18, 'https://picsum.photos/seed/event18/900/500', 'Electronic Summer'),
-(19, 'https://picsum.photos/seed/event19/900/500', 'Winter Lights Park'),
-(20, 'https://picsum.photos/seed/event20/900/500', 'Holiday Classics')
+(1, 'https://picsum.photos/seed/event1/1600/900', 'Jazz Under the Garden Lights'),
+(2, 'https://picsum.photos/seed/event2/1600/900', 'Modern Forms'),
+(3, 'https://picsum.photos/seed/event3/1600/900', 'Fairy Tale Symphony'),
+(4, 'https://picsum.photos/seed/event4/1600/900', 'Future Work Summit'),
+(5, 'https://picsum.photos/seed/event5/1600/900', 'Lens Craft Workshop'),
+(6, 'https://picsum.photos/seed/event6/1600/900', 'Night at the Colosseum'),
+(7, 'https://picsum.photos/seed/event7/1600/900', 'Summer Culture Fest'),
+(8, 'https://picsum.photos/seed/event8/1600/900', 'Beethoven by the Bay'),
+(9, 'https://picsum.photos/seed/event9/1600/900', 'Finance Forward'),
+(10, 'https://picsum.photos/seed/event10/1600/900', 'Open Air Cinema Classics'),
+(11, 'https://picsum.photos/seed/event11/1600/900', 'Hands On Sculpture Lab'),
+(12, 'https://picsum.photos/seed/event12/1600/900', 'Indie Dev Expo'),
+(13, 'https://picsum.photos/seed/event13/1600/900', 'Founder Launch Day'),
+(14, 'https://picsum.photos/seed/event14/1600/900', 'Runway Dispatch'),
+(15, 'https://picsum.photos/seed/event15/1600/900', 'Global Sound Stage'),
+(16, 'https://picsum.photos/seed/event16/1600/900', 'Gastronomy at the Louvre'),
+(17, 'https://picsum.photos/seed/event17/1600/900', 'Championship Finals'),
+(18, 'https://picsum.photos/seed/event18/1600/900', 'Electronic Summer'),
+(19, 'https://picsum.photos/seed/event19/1600/900', 'Winter Lights Park'),
+(20, 'https://picsum.photos/seed/event20/1600/900', 'Holiday Classics')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO event_images (event_id, image_id, is_cover) VALUES
@@ -174,46 +174,57 @@ INSERT INTO event_images (event_id, image_id, is_cover) VALUES
 (20, 20, TRUE)
 ON CONFLICT DO NOTHING;
 
+INSERT INTO images (id, url, alt_text) VALUES
+(21, 'https://picsum.photos/seed/event1-gallery/1600/900', 'Jazz Under the Garden Lights - Gallery'),
+(22, 'https://picsum.photos/seed/event2-gallery/1600/900', 'Modern Forms - Gallery'),
+(23, 'https://picsum.photos/seed/event3-gallery/1600/900', 'Fairy Tale Symphony - Gallery'),
+(24, 'https://picsum.photos/seed/event4-gallery/1600/900', 'Future Work Summit - Gallery'),
+(25, 'https://picsum.photos/seed/event5-gallery/1600/900', 'Lens Craft Workshop - Gallery'),
+(26, 'https://picsum.photos/seed/event6-gallery/1600/900', 'Night at the Colosseum - Gallery'),
+(27, 'https://picsum.photos/seed/event7-gallery/1600/900', 'Summer Culture Fest - Gallery'),
+(28, 'https://picsum.photos/seed/event8-gallery/1600/900', 'Beethoven by the Bay - Gallery'),
+(29, 'https://picsum.photos/seed/event9-gallery/1600/900', 'Finance Forward - Gallery'),
+(30, 'https://picsum.photos/seed/event10-gallery/1600/900', 'Open Air Cinema Classics - Gallery'),
+(31, 'https://picsum.photos/seed/event11-gallery/1600/900', 'Hands On Sculpture Lab - Gallery'),
+(32, 'https://picsum.photos/seed/event12-gallery/1600/900', 'Indie Dev Expo - Gallery'),
+(33, 'https://picsum.photos/seed/event13-gallery/1600/900', 'Founder Launch Day - Gallery'),
+(34, 'https://picsum.photos/seed/event14-gallery/1600/900', 'Runway Dispatch - Gallery'),
+(35, 'https://picsum.photos/seed/event15-gallery/1600/900', 'Global Sound Stage - Gallery'),
+(36, 'https://picsum.photos/seed/event16-gallery/1600/900', 'Gastronomy at the Louvre - Gallery'),
+(37, 'https://picsum.photos/seed/event17-gallery/1600/900', 'Championship Finals - Gallery'),
+(38, 'https://picsum.photos/seed/event18-gallery/1600/900', 'Electronic Summer - Gallery'),
+(39, 'https://picsum.photos/seed/event19-gallery/1600/900', 'Winter Lights Park - Gallery'),
+(40, 'https://picsum.photos/seed/event20-gallery/1600/900', 'Holiday Classics - Gallery')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO event_images (event_id, image_id, is_cover) VALUES
+(1, 21, FALSE),
+(2, 22, FALSE),
+(3, 23, FALSE),
+(4, 24, FALSE),
+(5, 25, FALSE),
+(6, 26, FALSE),
+(7, 27, FALSE),
+(8, 28, FALSE),
+(9, 29, FALSE),
+(10, 30, FALSE),
+(11, 31, FALSE),
+(12, 32, FALSE),
+(13, 33, FALSE),
+(14, 34, FALSE),
+(15, 35, FALSE),
+(16, 36, FALSE),
+(17, 37, FALSE),
+(18, 38, FALSE),
+(19, 39, FALSE),
+(20, 40, FALSE)
+ON CONFLICT DO NOTHING;
+
 -- WORK OPPORTUNITIES
 INSERT INTO work_opportunities (id, poster_id, title, position, mode, duration, employment, pay, description, location) VALUES
 (1, 1, 'Summer Festival Stage Crew', 'Stage Technician', 'onsite', 'month', 'full-time', 'EUR 1,800 / month', 'Help set up, manage, and strike the main stage for a month-long cultural festival circuit.', 'Porto, Portugal'),
 (2, 2, 'Remote Social Media Consultant', 'Content Strategist', 'remote', 'ongoing', 'part-time', 'EUR 25 / hour', 'Create social campaigns, schedule posts, and shape the digital voice of an arts venue.', 'Remote'),
 (3, 3, 'Hybrid Exhibition Assistant', 'Gallery Assistant', 'hybrid', 'week', 'part-time', 'EUR 900 / week', 'Support a contemporary exhibition with visitor care, setup tasks, and weekend coverage.', 'Lisbon, Portugal')
-ON CONFLICT DO NOTHING;
-
--- SOCIAL CONTENT
-INSERT INTO stories (id, user_id, media, label) VALUES
-(1, 11, 'https://picsum.photos/seed/story-seed-1/600/900', 'Opening night'),
-(2, 12, 'https://picsum.photos/seed/story-seed-2/600/900', 'Backstage'),
-(3, 13, 'https://picsum.photos/seed/story-seed-3/600/900', 'My night out')
-ON CONFLICT DO NOTHING;
-
-INSERT INTO publication (id, user_id, media, publish_date, information, location, likes, favorites, shares, event_id) VALUES
-(1, 11, 'https://picsum.photos/seed/pub-1/900/800', '2026-05-25', 'Golden lights, loud drums, and the best crowd I have seen all year.', 'Porto, Portugal', 142, 28, 14, 7),
-(2, 12, 'https://picsum.photos/seed/pub-2/900/800', '2026-05-26', 'Soundcheck finished. The crowd is in for a long night.', 'Lisbon, Portugal', 87, 19, 10, 18),
-(3, 13, 'https://picsum.photos/seed/pub-3/900/800', '2026-05-27', 'New mural, new music, same old city magic.', 'Coimbra, Portugal', 64, 9, 5, 10)
-ON CONFLICT DO NOTHING;
-
-INSERT INTO comments (id, publication_id, user_id, information, publish_date, likes) VALUES
-(1, 1, 12, 'This looks unforgettable.', '2026-05-25 20:00:00', 4),
-(2, 3, 11, 'This color palette is stunning.', '2026-05-27 21:15:00', 2)
-ON CONFLICT DO NOTHING;
-
-INSERT INTO publication_reactions (publication_id, user_id, liked, favorited, shared) VALUES
-(1, 11, TRUE, TRUE, TRUE),
-(2, 11, FALSE, FALSE, FALSE),
-(3, 11, FALSE, FALSE, FALSE)
-ON CONFLICT DO NOTHING;
-
-INSERT INTO notifications (id, recipient_user_id, actor_user_id, kind, title, message, is_read, created_at, publication_id, event_id) VALUES
-(1, 11, 12, 'follow', 'New follower', 'Sofia Martins started following you.', FALSE, '2026-05-29 10:00:00', NULL, NULL),
-(2, 11, 13, 'like', 'New like', 'Ana Ribeiro liked "Golden lights, loud drums, and the best crowd I have seen all year.".', FALSE, '2026-05-30 12:00:00', 1, NULL)
-ON CONFLICT DO NOTHING;
-
-INSERT INTO attended_events (user_id, event_id, status, attended_at) VALUES
-(11, 1, 'Attended', '2026-05-12 20:00:00'),
-(11, 7, 'Attended', '2026-05-18 21:00:00'),
-(11, 10, 'Saved for later', '2026-05-24 18:00:00')
 ON CONFLICT DO NOTHING;
 
 -- CUSTOMER USERS (for chat and social features)
@@ -240,6 +251,66 @@ ON CONFLICT DO NOTHING;
 INSERT INTO customer (customer_id) VALUES
 (11), (12), (13), (14), (15), (16), (17), (18), (19), (20), 
 (21), (22), (23), (24), (25), (26)
+ON CONFLICT DO NOTHING;
+
+-- SOCIAL CONTENT
+INSERT INTO stories (id, user_id, media, label) VALUES
+(1, 11, 'https://picsum.photos/seed/story-seed-1/600/900', 'Opening night'),
+(2, 12, 'https://picsum.photos/seed/story-seed-2/600/900', 'Backstage'),
+(3, 13, 'https://picsum.photos/seed/story-seed-3/600/900', 'My night out')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO publication (id, user_id, media, publish_date, information, location, likes, favorites, shares, event_id) VALUES
+(1, 11, 'https://picsum.photos/seed/pub-1/900/800', '2026-05-25', 'Golden lights, loud drums, and the best crowd I have seen all year.', 'Porto, Portugal', 142, 28, 14, 7),
+(2, 12, 'https://picsum.photos/seed/pub-2/900/800', '2026-05-26', 'Soundcheck finished. The crowd is in for a long night.', 'Lisbon, Portugal', 87, 19, 10, 18),
+(3, 13, 'https://picsum.photos/seed/pub-3/900/800', '2026-05-27', 'New mural, new music, same old city magic.', 'Coimbra, Portugal', 64, 9, 5, 10)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO publication (id, user_id, media, publish_date, information, location, likes, favorites, shares, event_id) VALUES
+(4, 14, 'https://picsum.photos/seed/pub-4/900/800', '2026-05-28', 'The venue felt electric from the first note.', 'Braga, Portugal', 178, 41, 22, 1),
+(5, 15, 'https://picsum.photos/seed/pub-5/900/800', '2026-05-29', 'Street art, live beats, and an unreal sunset.', 'Porto, Portugal', 131, 24, 17, 7),
+(6, 16, 'https://picsum.photos/seed/pub-6/900/800', '2026-05-30', 'Tonight was all about the little moments.', 'Faro, Portugal', 96, 14, 8, 3),
+(7, 17, 'https://picsum.photos/seed/pub-7/900/800', '2026-06-01', 'Gallery opening with a crowd that actually stayed for the talk.', 'Lisbon, Portugal', 154, 33, 12, 2),
+(8, 18, 'https://picsum.photos/seed/pub-8/900/800', '2026-06-02', 'Nothing beats a packed outdoor screening.', 'Aveiro, Portugal', 121, 27, 11, 10),
+(9, 19, 'https://picsum.photos/seed/pub-9/900/800', '2026-06-03', 'Weekend recap: too many great sets to count.', 'Porto, Portugal', 209, 52, 31, 18)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO comments (id, publication_id, user_id, information, publish_date, likes) VALUES
+(1, 1, 12, 'This looks unforgettable.', '2026-05-25 20:00:00', 4),
+(2, 3, 11, 'This color palette is stunning.', '2026-05-27 21:15:00', 2)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO comments (id, publication_id, user_id, information, publish_date, likes) VALUES
+(3, 4, 11, 'I would have loved to be there.', '2026-05-28 22:00:00', 7),
+(4, 5, 12, 'The lighting in this shot is incredible.', '2026-05-29 19:35:00', 5),
+(5, 7, 13, 'This looks like a packed house.', '2026-06-01 23:10:00', 3),
+(6, 9, 15, 'Saving this for inspiration.', '2026-06-03 18:25:00', 6)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO publication_reactions (publication_id, user_id, liked, favorited, shared) VALUES
+(1, 11, TRUE, TRUE, TRUE),
+(2, 11, FALSE, FALSE, FALSE),
+(3, 11, FALSE, FALSE, FALSE)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO publication_reactions (publication_id, user_id, liked, favorited, shared) VALUES
+(4, 11, TRUE, FALSE, FALSE),
+(5, 11, TRUE, TRUE, FALSE),
+(6, 11, FALSE, FALSE, FALSE),
+(7, 11, TRUE, FALSE, FALSE),
+(8, 11, FALSE, TRUE, FALSE),
+(9, 11, TRUE, TRUE, TRUE)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO notifications (id, recipient_user_id, actor_user_id, kind, title, message, is_read, created_at, publication_id, event_id) VALUES
+(1, 11, 12, 'follow', 'New follower', 'Sofia Martins started following you.', FALSE, '2026-05-29 10:00:00', NULL, NULL),
+(2, 11, 13, 'like', 'New like', 'Ana Ribeiro liked "Golden lights, loud drums, and the best crowd I have seen all year.".', FALSE, '2026-05-30 12:00:00', 1, NULL)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO attended_events (user_id, event_id, status, attended_at) VALUES
+(11, 1, 'Attended', '2026-05-12 20:00:00'),
+(11, 7, 'Attended', '2026-05-18 21:00:00'),
+(11, 10, 'Saved for later', '2026-05-24 18:00:00')
 ON CONFLICT DO NOTHING;
 
 -- FRIENDS RELATIONSHIPS

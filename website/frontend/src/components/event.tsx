@@ -10,6 +10,7 @@ import { isAuthenticated } from '../utils/auth';
 
 export interface Event {
     id?: number,
+    promoterUsername?: string,
     src: string,
     alt: string,
     type: string,
@@ -35,7 +36,7 @@ const EventContainer: React.FC<{ event: Event; onViewDetails?: (event: Event) =>
                     <span className='border border-[#fff3b0] bg-[#e09f3e]/80 px-3 py-1 font-semibold uppercase tracking-[0.2em] text-[#fff3b0]'>
                         {event.type}
                     </span>
-                    <button type='button' aria-label={`Share ${event.title}`} className='group flex h-8 w-8 items-center justify-center border border-[#fff3b0] bg-[#1a0f10]/80 text-[#fff3b0] transition duration-300 ease-in-out hover:bg-[#fff3b0] hover:text-[#1a0f10]'>
+                    <button type='button' onClick={() => onViewDetails?.(event)} aria-label={`Open sharing options for ${event.title}`} className='group flex h-8 w-8 items-center justify-center border border-[#fff3b0] bg-[#1a0f10]/80 text-[#fff3b0] transition duration-300 ease-in-out hover:bg-[#fff3b0] hover:text-[#1a0f10]'>
                         <img src={shareIcon} alt="Share" className='h-5 w-5 group-hover:hidden' />
                         <img src={shareDarkIcon} alt="" className='hidden h-5 w-5 group-hover:block' aria-hidden='true' />
                     </button>

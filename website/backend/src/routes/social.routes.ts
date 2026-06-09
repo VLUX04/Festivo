@@ -9,10 +9,12 @@ import {
   acceptFriendRequest,
   declineFriendRequest,
   followProfessional,
+  getPublicProfile,
   getSocialFeed,
   listIncomingFriendRequests,
   listFriends,
   sendFriendRequest,
+  saveProfessionalReview,
   sharePublication,
   searchFriends,
   togglePublicationFavorite,
@@ -39,6 +41,34 @@ router.get('/feed', async (req: any, res) => {
     const result = await getSocialFeed(viewerUsername);
 
     res.status(200).json({ success: true, feed: result.feed });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+router.get('/profiles/:username', async (req: any, res) => {
+  try {
+    const authorization = req.headers['authorization'];
+    const token = authorization && authorization.split(' ')[1];
+    const viewerUsername = token
+      ? (() => {
+          try {
+            const payload = jwt.verify(token, SECRET_KEY) as { username?: string };
+            return typeof payload.username === 'string' ? payload.username : undefined;
+          } catch {
+            return undefined;
+          }
+        })()
+      : undefined;
+
+    const result = await getPublicProfile(viewerUsername, req.params.username);
+
+    if (!result.ok) {
+      return res.status(result.status).json({ success: false, message: result.message });
+    }
+
+    res.status(200).json({ success: true, profile: result.profile });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: 'Internal server error' });
@@ -130,6 +160,22 @@ router.post('/follows', loginMiddleware, async (req: any, res) => {
     }
 
     res.status(200).json({ success: true, message: result.message });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+router.post('/professional-reviews', loginMiddleware, async (req: any, res) => {
+  try {
+    const { professionalUsername, rating, information } = req.body;
+    const result = await saveProfessionalReview(req.user.username, professionalUsername, Number(rating), information ?? '');
+
+    if (!result.ok) {
+      return res.status(result.status).json({ success: false, message: result.message });
+    }
+
+    res.status(201).json({ success: true, review: result.review });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: 'Internal server error' });

@@ -9,7 +9,6 @@ import {
   fetchFriendRequests,
   declineFriendRequest,
   refreshCommunityState,
-  shareItemWithFriend,
   sharePost,
   sendFriendRequest,
   togglePostFavorite,
@@ -53,6 +52,12 @@ const SocialPage: React.FC = () => {
   const navigate = useNavigate();
   const [isLogged, setIsLogged] = React.useState<boolean>(isAuthenticated());
   const isProfessional = isProfessionalRole(getStoredUser()?.role);
+  const trendingPosts = React.useMemo(
+    () => [...posts]
+      .sort((left, right) => (right.likes + right.favorites + right.shares) - (left.likes + left.favorites + left.shares))
+      .slice(0, 3),
+    [posts],
+  );
 
   React.useEffect(() => {
     const update = () => setIsLogged(isAuthenticated());
@@ -143,6 +148,18 @@ const SocialPage: React.FC = () => {
     const nextDraft = commentDrafts[selectedPost.id] || '';
     setModalCommentDraft(nextDraft);
   }, [commentDrafts, selectedPost]);
+
+  React.useEffect(() => {
+    if (!selectedPost) {
+      return;
+    }
+
+    const latestSelectedPost = posts.find((post) => post.id === selectedPost.id);
+
+    if (latestSelectedPost) {
+      setSelectedPost(latestSelectedPost);
+    }
+  }, [posts, selectedPost]);
 
   React.useEffect(() => {
     if (selectedVideoId === null) {
@@ -273,17 +290,54 @@ const SocialPage: React.FC = () => {
     }
 
     try {
-      await shareItemWithFriend({
-        friendUsername: selectedFriendUsername.trim(),
+      const token = localStorage.getItem('auth_token');
+
+      if (!token) {
+        return;
+      }
+
+      const initRes = await fetch('http://localhost:3000/chat/initiate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ friendUsername: selectedFriendUsername.trim() }),
+      });
+
+      const initData = await initRes.json().catch(() => ({}));
+
+      if (!initRes.ok || !initData.success) {
+        throw new Error(initData.message || 'Failed to initiate chat');
+      }
+
+      const chatId = initData.chatId;
+
+      const content = JSON.stringify({
+        kind: 'share',
         itemType: 'publication',
         itemId: selectedPost.id,
         title: selectedPost.caption,
         url: `/social?postId=${selectedPost.id}`,
-        body: selectedPost.caption,
+        body: selectedPost.caption || '',
       });
 
-      await sharePost(selectedPost.id);
+      const sendRes = await fetch('http://localhost:3000/chat/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ chatId: String(chatId), content }),
+      });
 
+      const sendData = await sendRes.json().catch(() => ({}));
+
+      if (!sendRes.ok || !sendData.success) {
+        throw new Error(sendData.message || 'Failed to send message');
+      }
+
+      await sharePost(selectedPost.id);
       await refreshCommunityState();
     } catch (error) {
       console.error('Failed to share publication', error);
@@ -435,14 +489,43 @@ const SocialPage: React.FC = () => {
               </div>
             </div>
 
+            {friendContacts.length === 0 ? (
+              <div className='border-4 border-[#fff3b0] bg-[#120707] p-6'>
+                <div className='mb-4 flex items-end justify-between gap-4'>
+                  <div>
+                    <h2 className='text-3xl font-bold text-[#fff3b0]'>Trending now</h2>
+                    <p className='text-[#a89060]'>With no friends yet, these are the hottest posts on Festivo.</p>
+                  </div>
+                </div>
+                <div className='grid gap-4 md:grid-cols-3'>
+                  {trendingPosts.map((post) => (
+                    <article key={`trending-${post.id}`} className='border-2 border-[#483d30] bg-[#1a0f10] overflow-hidden'>
+                      <div className='h-40 overflow-hidden'>
+                        <img src={post.image} alt={post.caption} className='h-full w-full object-cover' />
+                      </div>
+                      <div className='space-y-2 p-4'>
+                        <h3 className='text-lg font-bold text-[#fff3b0]'>{post.caption}</h3>
+                        <p className='text-sm text-[#a89060]'>{post.location}</p>
+                        <p className='text-xs uppercase tracking-[0.2em] text-[#8b7355]'>{post.likes + post.favorites + post.shares} interactions</p>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             <div className='space-y-6'>
               {posts.map((post) => (
                 <article key={post.id} className='overflow-hidden border-4 border-[#483d30] bg-[#1a0f10]'>
                   <div className='flex items-center gap-3 border-b border-[#483d30] px-5 py-4'>
-                    <img src={post.avatar} alt={post.author} className='h-12 w-12 rounded-full object-cover' />
-                    <div className='flex-1'>
-                      <div className='flex items-center gap-3'>
-                        <h3 className='text-xl font-bold text-[#fff3b0]'>{post.author}</h3>
+                          <button type='button' onClick={() => navigate(`/profile/${(post as any).username}`)} className='p-0 border-0 bg-transparent'>
+                            <img src={post.avatar} alt={post.author} className='h-12 w-12 rounded-full object-cover' />
+                          </button>
+                          <div className='flex-1'>
+                            <div className='flex items-center gap-3'>
+                              <button type='button' onClick={() => navigate(`/profile/${(post as any).username}`)} className='p-0 border-0 bg-transparent text-left'>
+                                <h3 className='text-xl font-bold text-[#fff3b0]'>{post.author}</h3>
+                              </button>
                         {post.isMine ? (
                           <span className='border border-[#fff3b0] px-2 py-1 text-[11px] uppercase tracking-[0.2em] text-[#fff3b0]'>Your post</span>
                         ) : null}
@@ -561,7 +644,14 @@ const SocialPage: React.FC = () => {
                           {friend.isFriend ? 'Added' : 'New'}
                         </span>
                       </div>
-                      <div className='mt-4'>
+                      <div className='mt-4 grid gap-2 sm:grid-cols-2'>
+                        <button
+                          type='button'
+                          onClick={() => navigate(`/profile/${friend.username}`)}
+                          className='border-2 border-[#fff3b0] px-4 py-2 font-semibold text-[#fff3b0] transition hover:bg-[#fff3b0] hover:text-[#540b0e]'
+                        >
+                          View profile
+                        </button>
                         <button
                           type='button'
                           onClick={() => void handleSendFriendRequest(friend.username)}
@@ -672,8 +762,10 @@ const SocialPage: React.FC = () => {
             </div>
 
             <div className='space-y-5 px-6 py-6'>
-              <div className='space-y-2'>
-                <h2 className='text-4xl font-bold text-[#fff3b0]'>{selectedPost.author}</h2>
+                <div className='space-y-2'>
+                <button type='button' onClick={() => navigate(`/profile/${(selectedPost as any).username}`)} className='p-0 border-0 bg-transparent text-left'>
+                  <h2 className='text-4xl font-bold text-[#fff3b0]'>{selectedPost.author}</h2>
+                </button>
                 <p className='text-lg text-[#a89060]'>{selectedPost.location}</p>
               </div>
 

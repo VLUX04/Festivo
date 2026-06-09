@@ -1,7 +1,8 @@
 import pool from '../db.js';
-import { getUserByUsername, getUserIdByUsername } from './user.service.js';
 
-const ensureSameRole = async (currentUsername: string, friendUsername: string) => {
+import { getUserByUsername } from './user.service.js';
+
+const ensureUsersExist = async (currentUsername: string, friendUsername: string) => {
 	const currentUser = await getUserByUsername(currentUsername);
 	const friendUser = await getUserByUsername(friendUsername);
 
@@ -9,15 +10,11 @@ const ensureSameRole = async (currentUsername: string, friendUsername: string) =
 		return { ok: false as const, status: 404, message: 'User not found' };
 	}
 
-	if (!currentUser.role || !friendUser.role || currentUser.role !== friendUser.role) {
-		return { ok: false as const, status: 403, message: 'Chats are only allowed between users with the same role' };
-	}
-
 	return { ok: true as const, currentUser, friendUser };
 };
 
 export async function initiateChat(currentUsername: string, friendUsername: string) {
-	const sameRoleCheck = await ensureSameRole(currentUsername, friendUsername);
+	const sameRoleCheck = await ensureUsersExist(currentUsername, friendUsername);
 
 	if (!sameRoleCheck.ok) {
 		return sameRoleCheck;
@@ -72,17 +69,13 @@ export async function getChatMessages(currentUsername: string, chatId: string) {
 	}
 
 	const otherParticipant = await pool.query(
-		`SELECT u.id, u.role
+		`SELECT u.id
 		 FROM chat_participants cp
 		 JOIN users u ON u.id = cp.user_id
 		 WHERE cp.chat_id = $1 AND cp.user_id != $2
 		 LIMIT 1`,
 		[chatId, currentUser.id],
 	);
-
-	if (otherParticipant.rows.length > 0 && otherParticipant.rows[0].role !== currentUser.role) {
-		return { ok: false as const, status: 403, message: 'Chats are only allowed between users with the same role' };
-	}
 
 	const messages = await pool.query(
 		`SELECT m.id, m.content, m.sent_at, u.username, u.name
@@ -113,17 +106,13 @@ export async function sendChatMessage(currentUsername: string, chatId: string, c
 	}
 
 	const otherParticipant = await pool.query(
-		`SELECT u.id, u.role
+		`SELECT u.id
 		 FROM chat_participants cp
 		 JOIN users u ON u.id = cp.user_id
 		 WHERE cp.chat_id = $1 AND cp.user_id != $2
 		 LIMIT 1`,
 		[chatId, sender.id],
 	);
-
-	if (otherParticipant.rows.length > 0 && otherParticipant.rows[0].role !== sender.role) {
-		return { ok: false as const, status: 403, message: 'Chats are only allowed between users with the same role' };
-	}
 
 	const message = await pool.query(
 		`INSERT INTO message (chat_id, sender_id, content, sent_at)
@@ -148,9 +137,9 @@ export async function getFriendChats(currentUsername: string) {
              JOIN chat_participants cp1 ON c.id = cp1.chat_id
              JOIN chat_participants cp2 ON c.id = cp2.chat_id
              JOIN users u ON cp2.user_id = u.id
-			 WHERE cp1.user_id = $1 AND cp2.user_id != $1 AND u.role = $2
+			 WHERE cp1.user_id = $1 AND cp2.user_id != $1
              ORDER BY c.id DESC`,
-		[currentUser.id, currentUser.role],
+		[currentUser.id],
 	);
 
 	return { ok: true as const, chats: chats.rows };

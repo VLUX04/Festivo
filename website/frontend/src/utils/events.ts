@@ -8,6 +8,7 @@ type EventApiRecord = {
   id: number;
   title: string | null;
   eventType: string | null;
+  promoterUsername: string | null;
   venue: string | null;
   latitude: number | string | null;
   longitude: number | string | null;
@@ -76,6 +77,7 @@ export const mapEventApiRecord = (event: EventApiRecord): Event => ({
   friendsGoing: [],
   price: event.price || 'Free',
   ticketLink: event.ticketLink || undefined,
+  promoterUsername: event.promoterUsername || undefined,
 });
 
 export const fetchEvents = async (): Promise<Event[]> => {

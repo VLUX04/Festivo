@@ -166,7 +166,7 @@ const MapPage: React.FC = () => {
                         <div className="flex mt-4 space-x-2">
                           <button
                             onClick={() => handleSelectEvent(event)}
-                            className="bg-[#e3a63e] text-[#1a0f10] px-4 py-2 rounded-lg font-bold"
+                            className="transition duration-300 ease-in-out text-center text-[#1a0f10] px-4 py-2 border border-[#fff3b0] bg-[#fff3b0] hover:bg-[#1a0f10] hover:text-[#fff3b0]"
                           >
                             See on Map
                           </button>

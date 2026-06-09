@@ -4,7 +4,7 @@ import "./style.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import LoginPage from "./pages/login.tsx";
 import RegisterPage from "./pages/register";
-import ProfilePage from "./pages/profile";
+import ProfilePage from "./pages/profile.tsx";
 import AboutPage from "./pages/about";
 import TermsPage from "./pages/terms";
 import EventsPage from "./pages/events";
@@ -32,6 +32,7 @@ ReactDOM.createRoot(document.getElementById("app")!).render(
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
+                    <Route path="/profile/:username" element={<ProfilePage />} />
                     <Route path="/edit-profile" element={<EditProfilePage />} />
                     <Route path="/events" element={<EventsPage />} />
                     <Route path="/friends" element={<FriendsPage />} />

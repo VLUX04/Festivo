@@ -384,13 +384,21 @@ const FriendsPage: React.FC = () => {
                         <div key={message.id} className={`flex ${fromCurrentUser ? 'justify-end' : 'justify-start'}`}>
                           <div className={`max-w-xs px-4 py-2 rounded ${fromCurrentUser ? 'bg-[#e3a63e] text-[#1a0f10]' : 'bg-[#483d30] text-[#fff3b0]'}`}>
                             {sharedPayload ? (
-                              <>
+                              <button
+                                type='button'
+                                onClick={() => { if (sharedPayload.url) navigate(sharedPayload.url); }}
+                                className='text-left w-full'
+                                aria-label={`Open shared ${sharedPayload.itemType}`}
+                              >
                                 <p className='text-xs uppercase tracking-[0.2em] font-semibold'>
                                   Shared {sharedPayload.itemType}
                                 </p>
                                 <p className='mt-1 font-bold'>{sharedPayload.title}</p>
                                 {sharedPayload.body ? <p className='mt-1'>{sharedPayload.body}</p> : null}
-                              </>
+                                {sharedPayload.url ? (
+                                  <p className='mt-2 text-sm text-[#fff3b0] underline'>Open {sharedPayload.itemType}</p>
+                                ) : null}
+                              </button>
                             ) : (
                               <p>{message.content}</p>
                             )}

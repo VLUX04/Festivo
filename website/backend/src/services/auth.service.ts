@@ -86,7 +86,12 @@ export async function completeRegistration(payload: CompleteRegistrationPayload)
 
 export async function loginUser(credential: string, password: string) {
 	const credentialIsEmail = isValidEmail(credential);
-	const user = credentialIsEmail ? await getUserByEmail(credential) : await getUserByUsername(credential);
+	const user = credentialIsEmail
+		? await getUserByEmail(credential)
+		: await getUserByUsername(credential) || await pool.query(
+			'SELECT id, username, name, email, role, pass, information FROM users WHERE LOWER(name) = LOWER($1) LIMIT 1',
+			[credential],
+		  ).then((result) => result.rows[0]);
 
 	if (!user) {
 		return {
