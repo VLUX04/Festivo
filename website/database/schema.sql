@@ -186,7 +186,7 @@ CREATE TABLE publication_reactions (
 );
 
 -- SOCIAL NOTIFICATIONS
-CREATE TYPE notification_kind AS ENUM ('follow', 'like', 'comment', 'share', 'favorite');
+CREATE TYPE notification_kind AS ENUM ('follow', 'like', 'comment', 'share', 'favorite', 'friend_request', 'friend_accept');
 CREATE TABLE notifications (
     id SERIAL PRIMARY KEY,
     recipient_user_id INT NOT NULL,
@@ -213,6 +213,16 @@ CREATE TABLE attended_events (
     PRIMARY KEY (user_id, event_id),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+);
+
+-- SAVED EVENTS
+CREATE TABLE saved_events (
+	user_id INT NOT NULL,
+	event_id INT NOT NULL,
+	saved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY (user_id, event_id),
+	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+	FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
 );
 
 -- APPLICATION
