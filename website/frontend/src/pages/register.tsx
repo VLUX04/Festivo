@@ -1,121 +1,144 @@
 import React from 'react';
 import { useState } from 'react';
-import Header from '../components/header';
+import PageLayout from '../components/pageLayout';
 import registerLogin from '../icons/register.png';
 import { useNavigate } from 'react-router-dom';
 import { useRegistration } from '../context/RegistrationContext';
 
 const RegisterPage: React.FC = () => {
-
   const navigate = useNavigate();
   const { saveRegistration } = useRegistration();
+  const [formData, setFormData] = useState({ username: '', name: '', email: '', password: '' });
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const [formData, setFormData] = useState({
-	  username: '',
-	  name: '',
-	  email: '',
-	  password: ''
-  });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
-  const handleChange = (e: any) => {
-	  const { name, value } = e.target;
-	  setFormData(prevData => ({
-		  ...prevData,
-		  [name]: value
-	  }));
-  }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
 
-  const handleSubmit = async (e: any) => {
-	  e.preventDefault();
-	  // basic validation
-	  if (!formData.username || !formData.name || !formData.email || !formData.password ) {
-		  alert("Filling in all the fields is necessary.");
-		  return;
-	  }
-	  // Email validation
-	  if (!/\S+@\S+\.\S+/.test(formData.email)) {
-	    alert('Please enter a valid email address')
-	    return
-	  }
-	  // Username validation
-      if (!/^[a-z-]+$/.test(formData.username)) {
-        alert('Username can only contain lowercase letters and dashes')
-        return
+    if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    if (!/^[a-z0-9-]+$/.test(formData.username)) {
+      setError('Username can only contain lowercase letters, numbers and dashes.');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      const response = await fetch('http://localhost:3000/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        saveRegistration({
+          username: formData.username,
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+        });
+        navigate('/account');
+      } else {
+        setError(data.message || 'Registration failed. Please try again.');
       }
-	  
-	  try {
-		  const response = await fetch('http://localhost:3000/register' ,{ //WARNING: localhost != 0.0.0.0 - ISMA
-			  method: 'POST',
-		  	  headers: {
-				  'Content-Type': 'application/json',
-			  }	,
-			  body: JSON.stringify(formData)
-		  });
+    } catch {
+      setError('Registration failed. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-		  const data = await response.json();
+  return (
+    <PageLayout mainClassName='items-center justify-center px-4 py-12'>
+      <div className='w-full max-w-md border-4 border-[#fff3b0] bg-[#1a0f10]'>
+        <form onSubmit={handleSubmit} className='flex flex-col px-10 py-10'>
+          <h1 className='text-5xl font-bold text-[#fff3b0]'>JOIN FESTIVO</h1>
+          <p className='text-[#a89060] mt-3'>Create your account to start discovering events.</p>
 
-          if (data.success) {
-              saveRegistration({
-                  username: formData.username,
-                  name: formData.name,
-                  email: formData.email,
-                  password: formData.password,
-              });
-              navigate("/account");
-		  } else {
-			  alert(data.message || 'Registration failed')
-		  }
-	  } catch (err) {
-		console.error('Error: ', err);
-		alert('Registration failed. Please try again.');
-	  }
-  }
-
-    return (
-      <div className='content flex min-h-screen flex-col bg-[#2a1814]'>
-        <Header />
-        <main className='mx-auto flex w-full flex-1 justify-center px-4 py-8'>
-          <div className='w-[28em] h-auto pt-5 bg-[#1a0f10] border-3 border-[#fff3b0] text-center flex flex-col shadow-[15px_15px_0_0_#231c16]'>
-  				<form onSubmit={handleSubmit}>
-          <h1 className='text-5xl font-bold text-[#fff3b0] mt-5'>JOIN FESTIVO</h1>
-          <p className='text-[#a89060] mt-5'>Create your account to start discovering events</p>
-
-          <div className='flex w-[85%] flex-col text-start mt-5 place-self-center'>
-            <span className='text-[#fff3b0] font-semibold mb-2'>USERNAME</span>
-            <input name="username" value={formData.username} onChange={handleChange} required className='border-2 border-[#483d30] placeholder-[#8d8059] p-3 text-[#fff3b0] outline-none focus:border-[#fff3b0] ' type="text" placeholder='Username'/>
+          <div className='flex flex-col mt-7'>
+            <span className='text-xs font-semibold uppercase tracking-[0.2em] text-[#fff3b0] mb-2'>Username</span>
+            <input
+              name='username'
+              value={formData.username}
+              onChange={handleChange}
+              required
+              placeholder='your-handle'
+              className='border-2 border-[#483d30] bg-[#120707] p-3 text-[#fff3b0] placeholder-[#7e6a4a] outline-none focus:border-[#fff3b0]'
+            />
           </div>
 
-          <div className='flex w-[85%] flex-col text-start mt-5 place-self-center'>
-            <span className='text-[#fff3b0] font-semibold mb-2'>NAME</span>
-            <input name="name" value={formData.name} onChange={handleChange} required className='border-2 border-[#483d30] placeholder-[#8d8059] p-3 text-[#fff3b0] outline-none focus:border-[#fff3b0] ' type="text" placeholder='Your Name'/>
+          <div className='flex flex-col mt-5'>
+            <span className='text-xs font-semibold uppercase tracking-[0.2em] text-[#fff3b0] mb-2'>Name</span>
+            <input
+              name='name'
+              value={formData.name}
+              onChange={handleChange}
+              required
+              placeholder='Your Name'
+              className='border-2 border-[#483d30] bg-[#120707] p-3 text-[#fff3b0] placeholder-[#7e6a4a] outline-none focus:border-[#fff3b0]'
+            />
           </div>
 
-          <div className='flex w-[85%] flex-col text-start mt-5 place-self-center'>
-            <span className='text-[#fff3b0] font-semibold mb-2'>EMAIL</span>
-            <input name="email" value={formData.email} onChange={handleChange} required className='border-2 border-[#483d30] placeholder-[#8d8059] p-3 text-[#fff3b0] outline-none focus:border-[#fff3b0] ' type="email" placeholder='you@example.com'/>
+          <div className='flex flex-col mt-5'>
+            <span className='text-xs font-semibold uppercase tracking-[0.2em] text-[#fff3b0] mb-2'>Email</span>
+            <input
+              name='email'
+              value={formData.email}
+              onChange={handleChange}
+              required
+              type='email'
+              placeholder='you@example.com'
+              className='border-2 border-[#483d30] bg-[#120707] p-3 text-[#fff3b0] placeholder-[#7e6a4a] outline-none focus:border-[#fff3b0]'
+            />
           </div>
 
-          <div className='flex w-[85%] flex-col text-start mt-5 place-self-center'>
-            <span className='text-[#fff3b0] font-semibold mb-2'>PASSWORD</span>
-            <input name="password" value={formData.password} onChange={handleChange} required className='border-2 border-[#483d30] placeholder-[#8d8059] p-3 text-[#fff3b0] outline-none focus:border-[#fff3b0] ' type="password" placeholder='********'/>
+          <div className='flex flex-col mt-5'>
+            <span className='text-xs font-semibold uppercase tracking-[0.2em] text-[#fff3b0] mb-2'>Password</span>
+            <input
+              name='password'
+              value={formData.password}
+              onChange={handleChange}
+              required
+              type='password'
+              placeholder='••••••••'
+              className='border-2 border-[#483d30] bg-[#120707] p-3 text-[#fff3b0] placeholder-[#7e6a4a] outline-none focus:border-[#fff3b0]'
+            />
           </div>
 
-          <div>
-            <button type="submit" className="group transition duration-250 ease-in-out w-[85%] py-3 mt-6 mb-8 bg-[#fff3b0] hover:bg-[#1a0f10] border-3 border-[#fff3b0] place-self-center flex items-center justify-center gap-2">
-              <img src={registerLogin} alt="" className="h-5 w-5 object-contain" aria-hidden="true" />
-              <span className='text-[#540b0e] group-hover:text-[#fff3b0]'>CREATE ACCOUNT</span>
-            </button>
-          </div>
+          {error ? (
+            <p className='mt-4 text-sm text-[#ff8f8f]'>{error}</p>
+          ) : null}
 
-          <div className='bg-[#483d30] w-[85%] h-[1.5px] place-self-center'></div>
-          <p className='text-[#a89060] mt-7'>Already have an account?</p>
-          <div className='justify-center mt-7 mb-10'>
-            <a href="/login" className='transition duration-250 ease-in-out py-3 px-7 border-2 border-[#483d30] hover:border-[#fff3b0] text-[#fff3b0]'>LOGIN</a>
-          </div>
-  				</form>
-        </div>
-      </main>
-    </div>
+          <button
+            type='submit'
+            disabled={submitting}
+            className='group mt-7 flex items-center justify-center gap-2 border-2 border-[#fff3b0] bg-[#fff3b0] py-3 font-bold text-[#540b0e] transition hover:bg-[#1a0f10] hover:text-[#fff3b0] disabled:opacity-60'
+          >
+            <img src={registerLogin} alt='' className='h-5 w-5 object-contain' aria-hidden='true' />
+            {submitting ? 'Creating...' : 'Create Account'}
+          </button>
+
+          <div className='my-7 h-px bg-[#483d30]' />
+
+          <p className='text-center text-[#a89060]'>Already have an account?</p>
+          <a
+            href='/login'
+            className='mt-4 flex items-center justify-center border-2 border-[#483d30] py-3 font-bold text-[#fff3b0] transition hover:border-[#fff3b0]'
+          >
+            Login
+          </a>
+        </form>
+      </div>
+    </PageLayout>
   );
 };
 

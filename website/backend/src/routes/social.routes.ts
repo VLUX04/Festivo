@@ -9,6 +9,8 @@ import {
   acceptFriendRequest,
   declineFriendRequest,
   followProfessional,
+  unfollowProfessional,
+  getFollowStatus,
   getPublicProfile,
   getSocialFeed,
   listIncomingFriendRequests,
@@ -274,6 +276,27 @@ router.get('/friends/search', loginMiddleware, async (req: any, res) => {
   }
 });
 
-// POST /friends route removed — use friend-requests flow instead
+router.delete('/follows', loginMiddleware, async (req: any, res) => {
+  try {
+    const { professionalUsername } = req.body;
+    const result = await unfollowProfessional(req.user.username, professionalUsername);
+    if (!result.ok) return res.status(result.status).json({ success: false, message: result.message });
+    res.status(200).json({ success: true, message: result.message });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+router.get('/follows/status/:username', loginMiddleware, async (req: any, res) => {
+  try {
+    const result = await getFollowStatus(req.user.username, req.params.username);
+    if (!result.ok) return res.status(result.status).json({ success: false, message: result.message });
+    res.status(200).json({ success: true, isFollowing: result.isFollowing });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
 
 export default router;

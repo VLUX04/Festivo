@@ -29,7 +29,10 @@ type PublicProfile = {
   rating: number | null;
   preferences: string[];
   publicationCount: number;
+  followersCount: number;
+  friendsCount: number;
   isMe: boolean;
+  isFollowing: boolean;
   canReview: boolean;
   reviews: PublicProfileReview[];
 };
@@ -52,12 +55,24 @@ const ProfilePage: React.FC = () => {
   const [profileError, setProfileError] = React.useState('');
   const [reviewDraft, setReviewDraft] = React.useState(emptyProfileReview);
   const [submittingReview, setSubmittingReview] = React.useState(false);
+  const [followLoading, setFollowLoading] = React.useState(false);
+  const [savedEvents, setSavedEvents] = React.useState<Array<{
+    id: number; title: string; eventType: string; venue: string; sdate: string; price: string;
+  }>>([]);
   const [myWorkOpportunities, setMyWorkOpportunities] = React.useState<Array<{
     id: number;
     title: string;
     position: string;
     location: string | null;
     createdAt: string;
+  }>>([]);
+  const [myAssignments, setMyAssignments] = React.useState<Array<{
+    id: number;
+    title: string;
+    eventType: string;
+    location: string;
+    sdate: string;
+    status: string;
   }>>([]);
 
   const profileUsername = params.username || currentUser?.username || '';
@@ -72,20 +87,37 @@ const ProfilePage: React.FC = () => {
       return;
     }
 
+    if (currentUser?.role === 'customer') {
+      const token = getAuthToken();
+      if (token) {
+        void fetch('http://localhost:3000/events/saved', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+          .then((r) => r.json())
+          .then((data) => { if (data.success) setSavedEvents(data.events || []); })
+          .catch(() => undefined);
+      }
+    }
+
     if (isProfessionalRole(currentUser?.role)) {
       const token = getAuthToken();
 
       if (token) {
         void fetch('http://localhost:3000/work/opportunities/mine', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         })
           .then((response) => response.json())
           .then((data) => {
-            if (data.success) {
-              setMyWorkOpportunities(data.opportunities || []);
-            }
+            if (data.success) setMyWorkOpportunities(data.opportunities || []);
+          })
+          .catch(() => undefined);
+
+        void fetch('http://localhost:3000/events/my-assignments', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) setMyAssignments(data.assignments || []);
           })
           .catch(() => undefined);
       }
@@ -147,6 +179,34 @@ const ProfilePage: React.FC = () => {
   const displayPreferences = activeProfile?.preferences || currentUser?.preferences || [];
   const attendedEvents = communityState.attendedEvents;
   const publications = communityState.posts.filter((post) => post.isMine);
+
+  const handleFollowToggle = async () => {
+    const token = getAuthToken();
+    if (!token) { navigate('/login'); return; }
+    if (!activeProfile) return;
+
+    setFollowLoading(true);
+    try {
+      const method = activeProfile.isFollowing ? 'DELETE' : 'POST';
+      const res = await fetch('http://localhost:3000/social/follows', {
+        method,
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ professionalUsername: activeProfile.username }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPublicProfile((prev) => prev ? {
+          ...prev,
+          isFollowing: !prev.isFollowing,
+          followersCount: prev.followersCount + (prev.isFollowing ? -1 : 1),
+        } : prev);
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setFollowLoading(false);
+    }
+  };
 
   const handleReviewSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -218,6 +278,14 @@ const ProfilePage: React.FC = () => {
               </div>
               <p className='text-[#a89060] text-xl'>@{displayUsername}</p>
               {displayEmail ? <p className='text-[#a89060] text-xl'>{displayEmail}</p> : null}
+              <div className='flex flex-wrap gap-3 mt-2 text-sm text-[#a89060]'>
+                <span><span className='font-bold text-[#fff3b0]'>{activeProfile?.publicationCount ?? 0}</span> posts</span>
+                {isProfessionalProfile ? (
+                  <span><span className='font-bold text-[#fff3b0]'>{activeProfile?.followersCount ?? 0}</span> followers</span>
+                ) : (
+                  <span><span className='font-bold text-[#fff3b0]'>{activeProfile?.friendsCount ?? 0}</span> friends</span>
+                )}
+              </div>
               {isSelfProfile ? (
                 <div className='flex flex-wrap gap-3'>
                   <button onClick={() => navigate('/edit-profile')} className='group flex flex-row items-center border-2 border-[#fff3b0] text-[#fff3b0] px-4 py-2 hover:bg-[#fff3b0] hover:text-[#1a0f10] transition duration-333 ease-in-out hover:cursor-pointer'>
@@ -229,6 +297,15 @@ const ProfilePage: React.FC = () => {
                     Go to Social
                   </button>
                 </div>
+              ) : isProfessionalProfile && isLoggedIn && viewingOtherProfile ? (
+                <button
+                  type='button'
+                  onClick={() => void handleFollowToggle()}
+                  disabled={followLoading}
+                  className={`px-5 py-2 font-bold border-2 transition disabled:opacity-60 ${activeProfile?.isFollowing ? 'border-[#fff3b0] bg-[#fff3b0] text-[#540b0e] hover:bg-[#1a0f10] hover:text-[#fff3b0]' : 'border-[#fff3b0] text-[#fff3b0] hover:bg-[#fff3b0] hover:text-[#1a0f10]'}`}
+                >
+                  {followLoading ? '...' : activeProfile?.isFollowing ? 'Following' : 'Follow'}
+                </button>
               ) : null}
             </div>
           </div>
@@ -365,6 +442,58 @@ const ProfilePage: React.FC = () => {
                         No work opportunities posted yet.
                       </div>
                     )}
+                  </div>
+                </div>
+              ) : null}
+
+              {isSelfProfile && currentUser?.role === 'professional' ? (
+                <div>
+                  <div className='mb-4 flex items-end justify-between gap-4'>
+                    <div>
+                      <h2 className='text-3xl font-bold text-[#fff3b0]'>Event Assignments</h2>
+                      <p className='text-[#a89060]'>Events you have been assigned to as a professional.</p>
+                    </div>
+                    <span className='text-sm uppercase tracking-[0.2em] text-[#a89060]'>{myAssignments.length} items</span>
+                  </div>
+                  <div className='flex gap-4 overflow-x-auto pb-3'>
+                    {myAssignments.length > 0 ? myAssignments.map((assignment) => (
+                      <article key={assignment.id} className='min-w-[300px] flex-shrink-0 border-2 border-[#483d30] bg-[#120707] p-4 space-y-2'>
+                        <div className='flex items-center justify-between gap-2'>
+                          <h3 className='text-xl font-bold text-[#fff3b0]'>{assignment.title}</h3>
+                          <span className='border border-[#fff3b0] px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-[#fff3b0]'>{assignment.status}</span>
+                        </div>
+                        <p className='text-[#a89060]'>{assignment.eventType}</p>
+                        <p className='text-[#a89060]'>{assignment.location}</p>
+                        <p className='text-xs text-[#8b7355]'>{assignment.sdate ? new Date(assignment.sdate).toLocaleDateString() : ''}</p>
+                      </article>
+                    )) : (
+                      <div className='border-2 border-[#483d30] bg-[#120707] px-4 py-6 text-[#a89060]'>No event assignments yet.</div>
+                    )}
+                  </div>
+                </div>
+              ) : null}
+
+              {isSelfProfile && currentUser?.role !== 'professional' && savedEvents.length > 0 ? (
+                <div>
+                  <div className='mb-4 flex items-end justify-between gap-4'>
+                    <div>
+                      <h2 className='text-3xl font-bold text-[#fff3b0]'>Saved Events</h2>
+                      <p className='text-[#a89060]'>Events you bookmarked for later.</p>
+                    </div>
+                    <span className='text-sm uppercase tracking-[0.2em] text-[#a89060]'>{savedEvents.length} items</span>
+                  </div>
+                  <div className='flex gap-4 overflow-x-auto pb-3'>
+                    {savedEvents.map((ev) => (
+                      <article key={ev.id} className='min-w-[280px] flex-shrink-0 border-2 border-[#483d30] bg-[#120707] p-4 space-y-2'>
+                        <h3 className='text-xl font-bold text-[#fff3b0]'>{ev.title}</h3>
+                        <p className='text-sm text-[#a89060]'>{ev.eventType}</p>
+                        <p className='text-sm text-[#a89060]'>{ev.venue}</p>
+                        <div className='flex items-center justify-between gap-2'>
+                          <p className='text-xs text-[#8b7355]'>{ev.sdate ? new Date(ev.sdate).toLocaleDateString() : ''}</p>
+                          <span className='border border-[#fff3b0] px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-[#fff3b0]'>{ev.price || 'Free'}</span>
+                        </div>
+                      </article>
+                    ))}
                   </div>
                 </div>
               ) : null}

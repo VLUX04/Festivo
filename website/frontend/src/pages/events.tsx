@@ -12,6 +12,9 @@ const EventsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [eventType, setEventType] = useState('');
   const [sortBy, setSortBy] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [locationFilter, setLocationFilter] = useState('');
   const [events, setEvents] = useState<React.ComponentProps<typeof EventContainer>['event'][]>([]);
   const [selectedEvent, setSelectedEvent] = useState<React.ComponentProps<typeof EventContainer>['event'] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,7 +63,11 @@ const EventsPage: React.FC = () => {
     let filtered = events.filter((event) => {
       const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesType = !eventType || event.type.toLowerCase() === eventType.toLowerCase();
-      return matchesSearch && matchesType;
+      const matchesLocation = !locationFilter || event.location.toLowerCase().includes(locationFilter.toLowerCase());
+      const rawDate = event.rawDate || '';
+      const matchesFrom = !dateFrom || rawDate >= dateFrom;
+      const matchesTo = !dateTo || rawDate <= dateTo;
+      return matchesSearch && matchesType && matchesLocation && matchesFrom && matchesTo;
     });
 
     if (!sortBy) return filtered;
@@ -95,7 +102,7 @@ const EventsPage: React.FC = () => {
           return 0;
       }
     });
-  }, [events, searchQuery, eventType, sortBy]);
+  }, [events, searchQuery, eventType, sortBy, locationFilter, dateFrom, dateTo]);
 
   const highlightedEvents = filteredAndSortedEvents.slice(0, 2);
 
@@ -201,8 +208,8 @@ const EventsPage: React.FC = () => {
 
               <div className='flex-1'>
                 <label className='block text-sm font-semibold text-[#fff3b0] mb-2'>Sort By</label>
-                <select 
-                  value={sortBy} 
+                <select
+                  value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                   className='w-full px-4 py-3 bg-[#2a1f20] border-2 border-[#a89060] text-[#fff3b0] focus:outline-none focus:border-[#fff3b0] transition cursor-pointer'>
                   <option value=''>Select sorting</option>
@@ -213,6 +220,37 @@ const EventsPage: React.FC = () => {
                   <option value='people-asc'>People Going (Least)</option>
                   <option value='people-desc'>People Going (Most)</option>
                 </select>
+              </div>
+            </div>
+
+            <div className='flex flex-col gap-4 md:flex-row md:items-end md:gap-6 mt-4'>
+              <div className='flex-1'>
+                <label className='block text-sm font-semibold text-[#fff3b0] mb-2'>Filter by Location</label>
+                <input
+                  type='text'
+                  placeholder='City, venue name...'
+                  value={locationFilter}
+                  onChange={(e) => setLocationFilter(e.target.value)}
+                  className='w-full px-4 py-3 bg-[#2a1f20] border-2 border-[#a89060] text-[#fff3b0] placeholder-[#8b7355] focus:outline-none focus:border-[#fff3b0] transition'
+                />
+              </div>
+              <div className='flex-1'>
+                <label className='block text-sm font-semibold text-[#fff3b0] mb-2'>From Date</label>
+                <input
+                  type='date'
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className='w-full px-4 py-3 bg-[#2a1f20] border-2 border-[#a89060] text-[#fff3b0] focus:outline-none focus:border-[#fff3b0] transition'
+                />
+              </div>
+              <div className='flex-1'>
+                <label className='block text-sm font-semibold text-[#fff3b0] mb-2'>To Date</label>
+                <input
+                  type='date'
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className='w-full px-4 py-3 bg-[#2a1f20] border-2 border-[#a89060] text-[#fff3b0] focus:outline-none focus:border-[#fff3b0] transition'
+                />
               </div>
             </div>
           </div>

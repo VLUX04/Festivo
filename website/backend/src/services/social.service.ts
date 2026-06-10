@@ -1,5 +1,6 @@
 import pool from '../db.js';
 import { getUserByUsername } from './user.service.js';
+import { createNotification } from './notification.service.js';
 
 type PublicationPayload = {
   caption: string;
@@ -84,10 +85,23 @@ export async function getPublicProfile(viewerUsername: string | undefined, targe
       )
     : { rows: [] as { tag: string }[] };
 
-  const publicationCountResult = await pool.query(
-    'SELECT COUNT(*)::int AS count FROM publication WHERE user_id = $1',
-    [profile.id],
-  );
+  const [publicationCountResult, followersCountResult, friendsCountResult] = await Promise.all([
+    pool.query('SELECT COUNT(*)::int AS count FROM publication WHERE user_id = $1', [profile.id]),
+    profile.role === 'professional'
+      ? pool.query('SELECT COUNT(*)::int AS count FROM follows WHERE professional_id = $1', [profile.id])
+      : Promise.resolve({ rows: [{ count: 0 }] }),
+    pool.query(
+      'SELECT COUNT(*)::int AS count FROM friends WHERE user1_id = $1 OR user2_id = $1',
+      [profile.id],
+    ),
+  ]);
+
+  const isFollowing = Boolean(viewer && profile.role === 'professional'
+    ? (await pool.query(
+        'SELECT 1 FROM follows WHERE customer_id = $1 AND professional_id = $2',
+        [viewer.id, profile.id],
+      )).rowCount
+    : false);
 
   return {
     ok: true as const,
@@ -105,7 +119,10 @@ export async function getPublicProfile(viewerUsername: string | undefined, targe
       rating: profile.rating,
       preferences: preferencesResult.rows.map((entry) => entry.tag),
       publicationCount: Number(publicationCountResult.rows[0]?.count || 0),
+      followersCount: Number(followersCountResult.rows[0]?.count || 0),
+      friendsCount: Number(friendsCountResult.rows[0]?.count || 0),
       isMe: viewer?.id === profile.id,
+      isFollowing,
       canReview: Boolean(viewer && viewer.role === 'customer' && profile.role === 'professional' && viewer.id !== profile.id),
       reviews: reviewsResult.rows as PublicProfileReview[],
     },
@@ -317,8 +334,19 @@ export async function togglePublicationLike(username: string, publicationId: num
 
     await client.query('UPDATE publication_reactions SET liked = $1 WHERE publication_id = $2 AND user_id = $3', [nextLiked, publicationId, currentUser.id]);
     await client.query('UPDATE publication SET likes = GREATEST(0, likes + $1) WHERE id = $2', [nextLiked ? 1 : -1, publicationId]);
-
     await client.query('COMMIT');
+
+    if (nextLiked && publication.rows[0].user_id !== currentUser.id) {
+      void createNotification({
+        recipientId: publication.rows[0].user_id,
+        actorId: currentUser.id,
+        kind: 'like',
+        title: 'New Like',
+        message: `${currentUser.name || currentUser.username} liked your publication.`,
+        publicationId,
+      });
+    }
+
     return { ok: true as const, liked: nextLiked };
   } catch (error) {
     await client.query('ROLLBACK');
@@ -385,6 +413,17 @@ export async function addPublicationComment(username: string, publicationId: num
     [publicationId, currentUser.id, body.trim()],
   );
 
+  if (publication.rows[0].user_id !== currentUser.id) {
+    void createNotification({
+      recipientId: publication.rows[0].user_id,
+      actorId: currentUser.id,
+      kind: 'comment',
+      title: 'New Comment',
+      message: `${currentUser.name || currentUser.username} commented on your publication.`,
+      publicationId,
+    });
+  }
+
   return { ok: true as const, comment: comment.rows[0] };
 }
 
@@ -407,12 +446,50 @@ export async function followProfessional(username: string, professionalUsername:
   // Ensure a customer profile exists for the follower to satisfy FK constraint
   await pool.query('INSERT INTO customer (customer_id) VALUES ($1) ON CONFLICT DO NOTHING', [currentUser.id]);
 
-  const followResult = await pool.query(
-    'INSERT INTO follows (customer_id, professional_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING customer_id',
+  await pool.query(
+    'INSERT INTO follows (customer_id, professional_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
     [currentUser.id, targetUser.id],
   );
 
+  void createNotification({
+    recipientId: targetUser.id,
+    actorId: currentUser.id,
+    kind: 'follow',
+    title: 'New Follower',
+    message: `${currentUser.name || currentUser.username} started following you.`,
+  });
+
   return { ok: true as const, message: 'Followed successfully' };
+}
+
+export async function unfollowProfessional(username: string, professionalUsername: string) {
+  const currentUser = await getUserByUsername(username);
+  const targetUser = await getUserByUsername(professionalUsername);
+
+  if (!currentUser || !targetUser) {
+    return { ok: false as const, status: 404, message: 'User not found' };
+  }
+
+  await pool.query(
+    'DELETE FROM follows WHERE customer_id = $1 AND professional_id = $2',
+    [currentUser.id, targetUser.id],
+  );
+
+  return { ok: true as const, message: 'Unfollowed successfully' };
+}
+
+export async function getFollowStatus(viewerUsername: string, targetUsername: string) {
+  const viewer = await getUserByUsername(viewerUsername);
+  const target = await getUserByUsername(targetUsername);
+
+  if (!viewer || !target) return { ok: false as const, status: 404, message: 'User not found' };
+
+  const result = await pool.query(
+    'SELECT 1 FROM follows WHERE customer_id = $1 AND professional_id = $2',
+    [viewer.id, target.id],
+  );
+
+  return { ok: true as const, isFollowing: (result.rowCount ?? 0) > 0 };
 }
 
 type FriendRow = {
@@ -563,6 +640,14 @@ export async function sendFriendRequest(username: string, receiverUsername: stri
     [sender.id, receiver.id, 'pending'],
   );
 
+  void createNotification({
+    recipientId: receiver.id,
+    actorId: sender.id,
+    kind: 'friend_request' as any,
+    title: 'Friend Request',
+    message: `${sender.name || sender.username} sent you a friend request.`,
+  });
+
   return { ok: true as const, requestId: result.rows[0].id, message: 'Friend request sent' };
 }
 
@@ -604,6 +689,15 @@ export async function acceptFriendRequest(username: string, requestId: number) {
     await client.query('INSERT INTO friends (user1_id, user2_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [user1, user2]);
     await client.query('UPDATE friend_requests SET status = $1 WHERE id = $2', ['accepted', requestId]);
     await client.query('COMMIT');
+
+    void createNotification({
+      recipientId: pendingRequest.sender_id,
+      actorId: currentUser.id,
+      kind: 'friend_accept' as any,
+      title: 'Friend Request Accepted',
+      message: `${currentUser.name || currentUser.username} accepted your friend request.`,
+    });
+
     return { ok: true as const, message: 'Friend request accepted' };
   } catch (error) {
     await client.query('ROLLBACK');

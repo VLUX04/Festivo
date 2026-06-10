@@ -19,6 +19,8 @@ import {
   type FriendRequest,
 } from '../utils/community.ts';
 import { AUTH_CHANGED_EVENT, getAuthToken, getStoredUser, isAuthenticated, isProfessionalRole } from '../utils/auth';
+import { fetchEvents } from '../utils/events.ts';
+import type { Event as FestEvent } from '../components/event';
 
 type FriendSearchResult = {
   friendId: number;
@@ -36,6 +38,8 @@ const SocialPage: React.FC = () => {
   const [composerLocation, setComposerLocation] = React.useState('');
   const [composerImage, setComposerImage] = React.useState('');
   const [composerMediaType, setComposerMediaType] = React.useState<'image' | 'video'>('image');
+  const [composerEventId, setComposerEventId] = React.useState('');
+  const [availableEvents, setAvailableEvents] = React.useState<FestEvent[]>([]);
   const [commentDrafts, setCommentDrafts] = React.useState<Record<number, string>>({});
   const [selectedPost, setSelectedPost] = React.useState<CommunityPost | null>(null);
   const [selectedVideoId, setSelectedVideoId] = React.useState<number | null>(null);
@@ -71,6 +75,10 @@ const SocialPage: React.FC = () => {
 
   React.useEffect(() => {
     void refreshCommunityState();
+  }, []);
+
+  React.useEffect(() => {
+    void fetchEvents().then(setAvailableEvents).catch(() => undefined);
   }, []);
 
   React.useEffect(() => {
@@ -194,7 +202,7 @@ const SocialPage: React.FC = () => {
       return;
     }
 
-    if (!composerCaption.trim() || !composerImage) {
+    if (!composerCaption.trim() || !composerImage || !composerEventId) {
       return;
     }
 
@@ -203,12 +211,14 @@ const SocialPage: React.FC = () => {
       image: composerImage,
       mediaType: composerMediaType,
       location: composerLocation.trim() || 'Festivo Feed',
+      eventId: Number(composerEventId),
     });
 
     setComposerCaption('');
     setComposerLocation('');
     setComposerImage('');
     setComposerMediaType('image');
+    setComposerEventId('');
   };
 
   const openPublication = (post: CommunityPost) => {
@@ -401,13 +411,18 @@ const SocialPage: React.FC = () => {
               <p className='mt-3 text-[#a89060]'>Stories, publications, comments, shares, and favorites in one feed.</p>
             </div>
 
-            <form onSubmit={handleCreatePublication} className='border-4 border-[#483d30] bg-[#1a0f10] p-6 space-y-4'>
+            <form onSubmit={handleCreatePublication} className='border-4 border-[#483d30] bg-[#1a0f10] p-6 space-y-5'>
+              <div>
+                <h2 className='text-2xl font-bold text-[#fff3b0]'>Create a Publication</h2>
+                <p className='text-[#a89060] mt-1 text-sm'>Share a moment from a cultural event with your community.</p>
+              </div>
+
               <div className='flex flex-col gap-4 md:flex-row'>
                 <input
                   type='text'
                   value={composerCaption}
                   onChange={(event) => setComposerCaption(event.target.value)}
-                  placeholder='Share a new publication...'
+                  placeholder='Write a caption...'
                   className='flex-1 border-2 border-[#483d30] bg-[#120707] px-4 py-3 text-[#fff3b0] placeholder-[#7e6a4a] outline-none focus:border-[#fff3b0]'
                 />
                 <input
@@ -415,13 +430,46 @@ const SocialPage: React.FC = () => {
                   value={composerLocation}
                   onChange={(event) => setComposerLocation(event.target.value)}
                   placeholder='Location'
-                  className='md:w-64 border-2 border-[#483d30] bg-[#120707] px-4 py-3 text-[#fff3b0] placeholder-[#7e6a4a] outline-none focus:border-[#fff3b0]'
+                  className='md:w-56 border-2 border-[#483d30] bg-[#120707] px-4 py-3 text-[#fff3b0] placeholder-[#7e6a4a] outline-none focus:border-[#fff3b0]'
                 />
               </div>
 
-              <div className='grid gap-4 md:grid-cols-[1fr_auto]'>
-                <label className='block cursor-pointer text-sm text-[#a89060] border-2 border-[#483d30] bg-[#120707] p-4'>
-                  <span className='mb-2 block font-semibold text-[#fff3b0]'>Publication media</span>
+              <div>
+                <label className='block text-xs uppercase tracking-[0.2em] font-semibold text-[#fff3b0] mb-2'>
+                  Tag an Event <span className='text-[#e09f3e]'>*</span>
+                </label>
+                <select
+                  required
+                  value={composerEventId}
+                  onChange={(event) => setComposerEventId(event.target.value)}
+                  className='w-full border-2 border-[#483d30] bg-[#120707] px-4 py-3 text-[#fff3b0] outline-none focus:border-[#fff3b0]'
+                >
+                  <option value=''>Select an event to tag...</option>
+                  {availableEvents.map((ev) => (
+                    <option key={ev.id} value={ev.id}>{ev.title} — {ev.date}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className='space-y-3'>
+                <label className='block text-xs uppercase tracking-[0.2em] font-semibold text-[#fff3b0]'>Media</label>
+                <div className='flex gap-2 mb-3'>
+                  <button
+                    type='button'
+                    onClick={() => setComposerMediaType('image')}
+                    className={`border-2 px-4 py-2 font-semibold transition ${composerMediaType === 'image' ? 'border-[#fff3b0] bg-[#fff3b0] text-[#540b0e]' : 'border-[#483d30] text-[#fff3b0] hover:border-[#fff3b0]'}`}
+                  >
+                    Image
+                  </button>
+                  <button
+                    type='button'
+                    onClick={() => setComposerMediaType('video')}
+                    className={`border-2 px-4 py-2 font-semibold transition ${composerMediaType === 'video' ? 'border-[#fff3b0] bg-[#fff3b0] text-[#540b0e]' : 'border-[#483d30] text-[#fff3b0] hover:border-[#fff3b0]'}`}
+                  >
+                    Video
+                  </button>
+                </div>
+                <label className='block cursor-pointer border-2 border-[#483d30] bg-[#120707] px-4 py-3'>
                   <input
                     type='file'
                     accept='.png,.jpg,.jpeg,.mp4,.webm,.ogg,image/png,image/jpeg,video/mp4,video/webm,video/ogg'
@@ -429,26 +477,10 @@ const SocialPage: React.FC = () => {
                     className='w-full text-sm text-[#fff3b0] file:mr-4 file:border-0 file:bg-[#fff3b0] file:px-4 file:py-2 file:text-[#540b0e] hover:file:bg-[#e09f3e] cursor-pointer'
                   />
                 </label>
-                <div className='flex items-end gap-3'>
-                  <button
-                    type='button'
-                    onClick={() => setComposerMediaType('image')}
-                    className={`border px-4 py-3 font-semibold transition ${composerMediaType === 'image' ? 'border-[#fff3b0] bg-[#fff3b0] text-[#540b0e]' : 'border-[#483d30] text-[#fff3b0] hover:border-[#fff3b0]'}`}
-                  >
-                    Image
-                  </button>
-                  <button
-                    type='button'
-                    onClick={() => setComposerMediaType('video')}
-                    className={`border px-4 py-3 font-semibold transition ${composerMediaType === 'video' ? 'border-[#fff3b0] bg-[#fff3b0] text-[#540b0e]' : 'border-[#483d30] text-[#fff3b0] hover:border-[#fff3b0]'}`}
-                  >
-                    Video
-                  </button>
-                </div>
               </div>
 
               {composerImage ? (
-                <div className='overflow-hidden border border-[#483d30] bg-[#120707]'>
+                <div className='overflow-hidden border-2 border-[#483d30] bg-[#120707]'>
                   {composerMediaType === 'video' ? (
                     <video src={composerImage} className='h-56 w-full object-cover' controls muted />
                   ) : (
@@ -457,10 +489,10 @@ const SocialPage: React.FC = () => {
                 </div>
               ) : null}
 
-              <div className='flex justify-end'>
+              <div className='flex justify-end border-t border-[#483d30] pt-4'>
                 <button
                   type='submit'
-                  className='border-2 border-[#fff3b0] bg-[#fff3b0] px-5 py-3 font-bold text-[#540b0e] transition hover:bg-[#1a0f10] hover:text-[#fff3b0]'
+                  className='border-2 border-[#fff3b0] bg-[#fff3b0] px-6 py-3 font-bold text-[#540b0e] transition hover:bg-[#1a0f10] hover:text-[#fff3b0]'
                 >
                   Publish
                 </button>

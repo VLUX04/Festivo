@@ -12,6 +12,8 @@ import FriendsPage from "./pages/friends";
 import SocialPage from "./pages/social";
 import WorkPage from "./pages/work";
 import CreateEventPage from "./pages/createEvent.tsx";
+import EditEventPage from "./pages/editEvent.tsx";
+import EventManagementPage from "./pages/eventManagement.tsx";
 import MapPage from "./pages/map";
 import ContactPage from "./pages/contact";
 import AccountCustomizationPage from "./pages/account";
@@ -39,6 +41,8 @@ ReactDOM.createRoot(document.getElementById("app")!).render(
                     <Route path="/social" element={<SocialPage />} />
                     <Route path="/work" element={<WorkPage />} />
                     <Route path="/work/create" element={<CreateEventPage />} />
+                    <Route path="/work/edit/:id" element={<EditEventPage />} />
+                    <Route path="/events/:id/manage" element={<EventManagementPage />} />
                     <Route path="/map" element={<MapPage />} />
                     <Route path="/contact" element={<ContactPage />} />
                     <Route path="/account" element={<AccountCustomizationPage />} />

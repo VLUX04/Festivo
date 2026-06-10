@@ -341,7 +341,7 @@ export const fetchFriendRequests = async (): Promise<FriendRequest[]> => {
   }
 };
 
-export const createPost = (payload: { caption: string; image: string; location?: string; mediaType?: 'image' | 'video' }): void => {
+export const createPost = (payload: { caption: string; image: string; location?: string; mediaType?: 'image' | 'video'; eventId?: number }): void => {
   const tempId = nextTempPublicationId--;
   const optimisticPost: CommunityPost = {
     id: tempId,

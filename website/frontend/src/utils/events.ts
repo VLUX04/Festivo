@@ -60,12 +60,14 @@ const formatDate = (dateValue: string | null): string => {
 };
 
 export const mapEventApiRecord = (event: EventApiRecord): Event => ({
+  id: event.id,
   src: event.src || FALLBACK_IMAGE,
   alt: event.alt || event.title || 'Event cover',
   type: event.eventType || 'Event',
   date: event.sdate && event.edate && event.sdate !== event.edate
     ? `${formatDate(event.sdate)} - ${formatDate(event.edate)}`
     : formatDate(event.sdate),
+  rawDate: event.sdate ? (event.sdate as string).split('T')[0] : '',
   title: event.title || event.description || 'Untitled event',
   promoter: event.promoter || 'Festivo',
   description: event.description || '',

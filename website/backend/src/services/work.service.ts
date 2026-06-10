@@ -109,3 +109,54 @@ export async function createWorkOpportunity(username: string, payload: WorkOppor
 
   return { ok: true as const, opportunityId: result.rows[0].id };
 }
+
+export async function searchProfessionals(query: string) {
+  const term = `%${query.trim()}%`;
+  const result = await pool.query(
+    `SELECT
+        u.id,
+        u.username,
+        COALESCE(u.name, u.username) AS name,
+        u.location,
+        u.information AS bio,
+        pp.genre,
+        pp.rating,
+        pp.is_verified AS "isVerified",
+        (SELECT COUNT(*)::int FROM follows f WHERE f.professional_id = u.id) AS "followersCount"
+     FROM users u
+     JOIN professional_profile pp ON pp.user_id = u.id
+     WHERE (u.username ILIKE $1 OR u.name ILIKE $1 OR u.information ILIKE $1 OR pp.genre ILIKE $1)
+     ORDER BY pp.rating DESC NULLS LAST, u.name ASC
+     LIMIT 30`,
+    [term],
+  );
+  return { ok: true as const, professionals: result.rows };
+}
+
+export async function applyForOpportunity(username: string, opportunityId: number, information: string, contact: string) {
+  const currentUser = await getUserByUsername(username);
+  if (!currentUser) return { ok: false as const, status: 404, message: 'User not found' };
+
+  const role = await getUserRoleByUsername(username);
+  if (!role || role.role !== 'professional') {
+    return { ok: false as const, status: 403, message: 'Only professionals can apply for work opportunities' };
+  }
+
+  const oppCheck = await pool.query('SELECT id, title FROM work_opportunities WHERE id = $1', [opportunityId]);
+  if (oppCheck.rowCount === 0) return { ok: false as const, status: 404, message: 'Opportunity not found' };
+
+  const profCheck = await pool.query('SELECT user_id FROM professional_profile WHERE user_id = $1', [currentUser.id]);
+  if (profCheck.rowCount === 0) return { ok: false as const, status: 400, message: 'Professional profile not found' };
+
+  const oppTitle = oppCheck.rows[0].title as string;
+  const combined = `[Opportunity #${opportunityId}: ${oppTitle}] ${information || ''}`.trim();
+
+  const result = await pool.query(
+    `INSERT INTO application (publisher_id, event_id, information, contact)
+     VALUES ($1, NULL, $2, $3)
+     RETURNING id`,
+    [currentUser.id, combined, contact || null],
+  );
+
+  return { ok: true as const, applicationId: result.rows[0].id };
+}

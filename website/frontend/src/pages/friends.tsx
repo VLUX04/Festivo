@@ -345,6 +345,13 @@ const FriendsPage: React.FC = () => {
                         >
                           Message
                         </button>
+                        <button
+                          type='button'
+                          onClick={() => navigate(`/profile/${friend.username}`)}
+                          className='flex-1 border border-[#e09f3e] text-[#e09f3e] text-xs py-1 hover:bg-[#3d2d24] transition'
+                        >
+                          Profile
+                        </button>
                       </div>
                     </div>
                   ))

@@ -1,67 +1,65 @@
-import React from "react";
-import CompleteProfile from "../components/completeProfile";
-import { useNavigate } from "react-router-dom";
-import customer_icon from "../icons/profile.png";
-import { useRegistration } from "../context/RegistrationContext";
+import React from 'react';
+import PageLayout from '../components/pageLayout';
+import { useNavigate } from 'react-router-dom';
+import customer_icon from '../icons/profile.png';
+import { useRegistration } from '../context/RegistrationContext';
+
+const ACCOUNT_TYPES = [
+  {
+    key: 'customer',
+    label: 'Event Lover',
+    description: 'Discover and attend cultural events, connect with friends, and share your experiences.',
+  },
+  {
+    key: 'artist',
+    label: 'Artist',
+    description: 'Showcase your art, perform at events, and grow your audience in the cultural community.',
+  },
+  {
+    key: 'promoter',
+    label: 'Promoter',
+    description: 'Organize events, find talent, and build unforgettable cultural experiences.',
+  },
+] as const;
 
 const AccountCustomizationPage: React.FC = () => {
-    const navigate = useNavigate();
-    const { saveRegistration } = useRegistration();
-    const handleSelect = (type: string) => {
-        saveRegistration({ accountType: type });
-        navigate("/" + type + "_per");
-    };
+  const navigate = useNavigate();
+  const { saveRegistration } = useRegistration();
 
-    return (
-        <div className='mx-auto flex w-[82%] flex-col items-center gap-8 py-8'>
-            <CompleteProfile/>
-            <h1 className="text-3xl font-bold text-[#fff3b0] text-center">
-                Choose Your Account Type
-            </h1>
-            <div className="flex flex-row justify-center flex-wrap gap-6">
-                <button
-                    onClick={() => handleSelect("customer")}
-                    className="card-button w-[21em] h-[15em] pt-5 m-5 self-center bg-[#1a0f10] border-3 border-[#483d30] hover:border-[#fff3b0] transition-colors duration-400 text-left flex flex-col cursor-pointer">
-                    <div className="card-icon ml-6 w-14 h-14 bg-[#3a3122] border-3 border-[#fff3b0] flex items-center justify-center">
-                        <img src={customer_icon} alt="Customer" className="w-8 h-8 object-contain"/>
-                    </div>
-                    <h2 className="text-3xl font-bold text-[#fff3b0] mt-2 px-6">
-                        Event Lover
-                    </h2>
-                    <p className="text-[#a89060] px-6 mt-4 mb-8">
-                        Discover and attend cultural events, connect with friends, and share
-                        your experiences.
-                    </p>
-                </button>
+  const handleSelect = (type: string) => {
+    saveRegistration({ accountType: type });
+    navigate(`/${type}_per`);
+  };
 
-                <button
-                    onClick={() => handleSelect("artist")}
-                    className="card-button w-[21em] h-[15em] pt-5 m-7 self-center bg-[#1a0f10] border-3 border-[#483d30] hover:border-[#fff3b0] transition-colors duration-400 text-left flex flex-col cursor-pointer">
-                    <div className="card-icon ml-6 w-14 h-14 bg-[#3a3122] border-3 border-[#fff3b0] flex items-center justify-center">
-                        <img src={customer_icon} alt="Customer" className="w-8 h-8 object-contain"/>
-                    </div>                    
-                    <h2 className="text-3xl font-bold text-[#fff3b0] mt-2 px-6">Artist</h2>
-                    <p className="text-[#a89060] px-6 mt-4 mb-8">
-                        Showcase your art, perform at events, and grow your audience in the
-                        cultural community.
-                    </p>
-                </button>
-
-                <button
-                    onClick={() => handleSelect("promoter")}
-                    className="card-button w-[21em] h-[15em] pt-5 m-7 self-center bg-[#1a0f10] border-3 border-[#483d30] hover:border-[#fff3b0] transition-colors duration-400 text-left flex flex-col cursor-pointer">
-                    <div className="card-icon ml-6 w-14 h-14 bg-[#3a3122] border-3 border-[#fff3b0] flex items-center justify-center">
-                        <img src={customer_icon} alt="Customer" className="w-8 h-8 object-contain"/>
-                    </div>
-                    <h2 className="text-3xl font-bold text-[#fff3b0] mt-2 px-6">Promoter</h2>
-                    <p className="text-[#a89060] text-left px-6 mt-4 mb-8">
-                        Organize events, find talent, and build unforgettable cultural
-                        experiences.
-                    </p>
-                </button>
-            </div>
+  return (
+    <PageLayout>
+      <div className='w-full p-4 space-y-6 flex flex-col items-center mt-6 pb-12'>
+        <div className='w-[82%] border-4 border-[#fff3b0] bg-[#1a0f10] p-8'>
+          <h1 className='text-5xl font-bold text-[#fff3b0]'>CHOOSE YOUR ROLE</h1>
+          <p className='text-[#a89060] text-xl mt-3'>Select the account type that best describes you.</p>
         </div>
-    );
+
+        <div className='w-[82%] grid gap-6 md:grid-cols-3'>
+          {ACCOUNT_TYPES.map(({ key, label, description }) => (
+            <button
+              key={key}
+              type='button'
+              onClick={() => handleSelect(key)}
+              className='card-button text-left border-2 border-[#483d30] bg-[#1a0f10] p-8 flex flex-col gap-4 hover:border-[#fff3b0] transition cursor-pointer'
+            >
+              <div className='card-icon w-14 h-14 border-2 border-[#fff3b0] bg-[#3a3122] flex items-center justify-center shrink-0'>
+                <img src={customer_icon} alt={label} className='w-8 h-8 object-contain' />
+              </div>
+              <div>
+                <h2 className='text-2xl font-bold text-[#fff3b0]'>{label}</h2>
+                <p className='text-[#a89060] mt-2 leading-7'>{description}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </PageLayout>
+  );
 };
 
 export default AccountCustomizationPage;

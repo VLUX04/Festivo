@@ -15,6 +15,7 @@ export interface Event {
     alt: string,
     type: string,
     date: string,
+    rawDate?: string,
     title: string,
     promoter: string,
     description: string,
@@ -79,7 +80,7 @@ const EventContainer: React.FC<{ event: Event; onViewDetails?: (event: Event) =>
                 <button
                     type='button'
                     onClick={() => onViewDetails?.(event)}
-                    className='transition duration-300 ease-in-out text-[#fff3b0] p-2 border border-[#483d30] hover:bg-[#fff3b0] hover:border-[#fff3b0] hover:text-[#1a0f10]'
+                    className='transition duration-300 ease-in-out px-5 py-3 font-bold text-[#fff3b0] border-2 border-[#483d30] hover:bg-[#fff3b0] hover:border-[#fff3b0] hover:text-[#1a0f10]'
                 >
                     View Details
                 </button>
@@ -88,7 +89,7 @@ const EventContainer: React.FC<{ event: Event; onViewDetails?: (event: Event) =>
                         href={event.ticketLink}
                         target='_blank'
                         rel='noreferrer'
-                        className='transition duration-300 ease-in-out text-center text-[#1a0f10] p-2 border border-[#fff3b0] bg-[#fff3b0] hover:bg-[#1a0f10] hover:text-[#fff3b0]'
+                        className='transition duration-300 ease-in-out text-center px-5 py-3 font-bold text-[#540b0e] border-2 border-[#fff3b0] bg-[#fff3b0] hover:bg-[#1a0f10] hover:text-[#fff3b0]'
                     >
                         Buy Tickets
                     </a>

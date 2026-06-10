@@ -15,6 +15,7 @@ import {
     isAuthenticated,
     isProfessionalRole,
 } from '../utils/auth';
+import NotificationPanel, { useNotifications } from './notificationPanel';
 
 const navItems = [
     { label: 'Events', icon: eventsIcon },
@@ -29,12 +30,15 @@ const navButtonClass = 'group transition duration-333 ease-in-out border-2 borde
 const Header: React.FC = () => {
     const [isLogged, setIsLogged] = React.useState<boolean>(isAuthenticated());
     const [isProfessional, setIsProfessional] = React.useState<boolean>(isProfessionalRole(getStoredUser()?.role));
+    const [showNotifications, setShowNotifications] = React.useState(false);
+    const { unreadCount, refresh: refreshNotifications } = useNotifications();
     const navigate = useNavigate();
 
     React.useEffect(() => {
         const updateAuth = () => {
             setIsLogged(isAuthenticated());
             setIsProfessional(isProfessionalRole(getStoredUser()?.role));
+            void refreshNotifications();
         };
 
         window.addEventListener(AUTH_CHANGED_EVENT, updateAuth);
@@ -44,7 +48,7 @@ const Header: React.FC = () => {
             window.removeEventListener(AUTH_CHANGED_EVENT, updateAuth);
             window.removeEventListener('storage', updateAuth);
         };
-    }, []);
+    }, [refreshNotifications]);
 
     const handleLogout = () => {
         clearAuthSession();
@@ -87,6 +91,27 @@ const Header: React.FC = () => {
             <div className='flex-1 flex items-center justify-end gap-4'>
                 {isLogged ? (
                     <>
+                        <div className='relative'>
+                            <button
+                                type='button'
+                                onClick={() => setShowNotifications((v) => !v)}
+                                className='relative flex items-center justify-center h-8 w-8 border border-[#483d30] text-[#fff3b0] hover:border-[#fff3b0] transition'
+                                aria-label='Notifications'
+                            >
+                                <span className='text-lg'>🔔</span>
+                                {unreadCount > 0 ? (
+                                    <span className='absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#e09f3e] text-[10px] font-bold text-[#1a0f10]'>
+                                        {unreadCount > 9 ? '9+' : unreadCount}
+                                    </span>
+                                ) : null}
+                            </button>
+                            {showNotifications ? (
+                                <>
+                                    <div className='fixed inset-0 z-[9998]' onClick={() => setShowNotifications(false)} />
+                                    <NotificationPanel onClose={() => setShowNotifications(false)} />
+                                </>
+                            ) : null}
+                        </div>
                         <Link to="/profile" className='transition duration-333 ease-in-out text-xl text-[#fff3b0] hover:cursor-pointer hover:scale-110 flex items-center gap-1 group'>
                             <div className="relative h-7 w-7">
                                 <img src={profileIcon} alt="" className="h-7 w-7 object-contain rounded-full" aria-hidden="true"/>

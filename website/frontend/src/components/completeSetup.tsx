@@ -1,17 +1,21 @@
-import React from "react";
+import React from 'react';
 
 type CompleteSetupProps = {
-    onClick: () => void;
-    disabled?: boolean;
+  onClick: () => void;
+  disabled?: boolean;
 };
 
 const CompleteSetup: React.FC<CompleteSetupProps> = ({ onClick, disabled }) => (
+  <div className='w-[82%] flex justify-end pb-4'>
     <button
-        onClick={onClick}
-        disabled={disabled}
-        className="w-[50em] h-auto py-5 m-7 mb-[6em] self-center bg-[#fff3b0] text-center flex flex-col items-center shadow-[10px_10px_0_0_#bc821d] hover:shadow-[4px_4px_0_0_#bc821d] transition-shadow duration-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none">
-        <h2 className="text-3xl font-bold text-[#83632c]"> → Complete Setup</h2>
+      type='button'
+      onClick={onClick}
+      disabled={disabled}
+      className='border-2 border-[#fff3b0] bg-[#fff3b0] px-8 py-4 text-xl font-bold text-[#540b0e] transition hover:bg-[#1a0f10] hover:text-[#fff3b0] disabled:cursor-not-allowed disabled:opacity-40 disabled:border-[#483d30] disabled:bg-transparent disabled:text-[#483d30]'
+    >
+      Complete Setup →
     </button>
+  </div>
 );
 
 export default CompleteSetup;
