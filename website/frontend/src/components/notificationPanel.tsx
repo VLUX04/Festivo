@@ -29,6 +29,7 @@ const kindIcon: Record<string, string> = {
 
 type Props = {
   onClose: () => void;
+  onRefresh?: () => void;
 };
 
 export const useNotifications = () => {
@@ -57,7 +58,7 @@ export const useNotifications = () => {
   return { unreadCount, refresh };
 };
 
-const NotificationPanel: React.FC<Props> = ({ onClose }) => {
+const NotificationPanel: React.FC<Props> = ({ onClose, onRefresh }) => {
   const navigate = useNavigate();
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -85,6 +86,7 @@ const NotificationPanel: React.FC<Props> = ({ onClose }) => {
       headers: { Authorization: `Bearer ${token}` },
     }).catch(() => undefined);
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    onRefresh?.();
   };
 
   const handleClick = async (n: Notification) => {
@@ -95,6 +97,7 @@ const NotificationPanel: React.FC<Props> = ({ onClose }) => {
         headers: { Authorization: `Bearer ${token}` },
       }).catch(() => undefined);
       setNotifications((prev) => prev.map((x) => x.id === n.id ? { ...x, isRead: true } : x));
+      onRefresh?.();
     }
 
     if (n.eventId) navigate(`/events?eventId=${n.eventId}`);

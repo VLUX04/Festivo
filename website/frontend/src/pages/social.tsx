@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageLayout from '../components/pageLayout';
+import EventDetailsModal from '../components/eventDetailsModal';
 import {
   addCommentToPost,
   createPost,
@@ -33,7 +34,8 @@ type FriendSearchResult = {
 const API_BASE_URL = 'http://localhost:3000';
 
 const SocialPage: React.FC = () => {
-  const { stories, posts } = useCommunityState();
+  const { posts } = useCommunityState();
+  const [showComposer, setShowComposer] = React.useState(false);
   const [composerCaption, setComposerCaption] = React.useState('');
   const [composerLocation, setComposerLocation] = React.useState('');
   const [composerImage, setComposerImage] = React.useState('');
@@ -52,6 +54,7 @@ const SocialPage: React.FC = () => {
   const [friendSearchError, setFriendSearchError] = React.useState('');
   const [addingFriendUsername, setAddingFriendUsername] = React.useState('');
   const [modalCommentDraft, setModalCommentDraft] = React.useState('');
+  const [selectedEventForModal, setSelectedEventForModal] = React.useState<FestEvent | null>(null);
   const videoRefs = React.useRef(new Map<number, HTMLVideoElement | null>());
   const navigate = useNavigate();
   const [isLogged, setIsLogged] = React.useState<boolean>(isAuthenticated());
@@ -78,7 +81,16 @@ const SocialPage: React.FC = () => {
   }, []);
 
   React.useEffect(() => {
-    void fetchEvents().then(setAvailableEvents).catch(() => undefined);
+    void fetchEvents().then((events) => {
+      setAvailableEvents(events);
+      // Auto-open composer and pre-select event if URL has ?eventId=X
+      const params = new URLSearchParams(window.location.search);
+      const eventIdParam = params.get('eventId');
+      if (eventIdParam) {
+        setComposerEventId(eventIdParam);
+        setShowComposer(true);
+      }
+    }).catch(() => undefined);
   }, []);
 
   React.useEffect(() => {
@@ -98,9 +110,7 @@ const SocialPage: React.FC = () => {
     }
 
     const token = getAuthToken();
-    if (!token) {
-      return;
-    }
+    if (!token) return;
 
     const trimmedQuery = friendSearchQuery.trim();
 
@@ -119,11 +129,7 @@ const SocialPage: React.FC = () => {
 
           const response = await fetch(
             `${API_BASE_URL}/social/friends/search?q=${encodeURIComponent(trimmedQuery)}`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            },
+            { headers: { Authorization: `Bearer ${token}` } },
           );
 
           const data = await response.json();
@@ -158,9 +164,7 @@ const SocialPage: React.FC = () => {
   }, [commentDrafts, selectedPost]);
 
   React.useEffect(() => {
-    if (!selectedPost) {
-      return;
-    }
+    if (!selectedPost) return;
 
     const latestSelectedPost = posts.find((post) => post.id === selectedPost.id);
 
@@ -179,10 +183,7 @@ const SocialPage: React.FC = () => {
 
   const handleComposerImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-
-    if (!file) {
-      return;
-    }
+    if (!file) return;
 
     const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
     setComposerMediaType(mediaType);
@@ -219,6 +220,7 @@ const SocialPage: React.FC = () => {
     setComposerImage('');
     setComposerMediaType('image');
     setComposerEventId('');
+    setShowComposer(false);
   };
 
   const openPublication = (post: CommunityPost) => {
@@ -236,18 +238,13 @@ const SocialPage: React.FC = () => {
 
   const pauseAllOtherVideos = (activeId: number) => {
     videoRefs.current.forEach((video, videoId) => {
-      if (videoId !== activeId) {
-        video?.pause();
-      }
+      if (videoId !== activeId) video?.pause();
     });
   };
 
   const toggleVideoPlayback = async (postId: number) => {
     const video = videoRefs.current.get(postId);
-
-    if (!video) {
-      return;
-    }
+    if (!video) return;
 
     pauseAllOtherVideos(postId);
 
@@ -266,16 +263,10 @@ const SocialPage: React.FC = () => {
   };
 
   const handleCommentSubmit = (postId: number, draft: string) => {
-    if (!isLogged) {
-      navigate('/login');
-      return;
-    }
+    if (!isLogged) { navigate('/login'); return; }
 
     addCommentToPost(postId, draft);
-    setCommentDrafts((previous) => ({
-      ...previous,
-      [postId]: '',
-    }));
+    setCommentDrafts((previous) => ({ ...previous, [postId]: '' }));
 
     if (selectedPost?.id === postId) {
       setModalCommentDraft('');
@@ -283,46 +274,27 @@ const SocialPage: React.FC = () => {
   };
 
   const handleModalCommentSubmit = () => {
-    if (!selectedPost) {
-      return;
-    }
-
+    if (!selectedPost) return;
     handleCommentSubmit(selectedPost.id, modalCommentDraft);
   };
 
   const handleShareToFriend = async () => {
-    if (!selectedPost) {
-      return;
-    }
-
-    if (!selectedFriendUsername.trim()) {
-      return;
-    }
+    if (!selectedPost || !selectedFriendUsername.trim()) return;
 
     try {
       const token = localStorage.getItem('auth_token');
-
-      if (!token) {
-        return;
-      }
+      if (!token) return;
 
       const initRes = await fetch('http://localhost:3000/chat/initiate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ friendUsername: selectedFriendUsername.trim() }),
       });
 
       const initData = await initRes.json().catch(() => ({}));
-
-      if (!initRes.ok || !initData.success) {
-        throw new Error(initData.message || 'Failed to initiate chat');
-      }
+      if (!initRes.ok || !initData.success) throw new Error(initData.message || 'Failed to initiate chat');
 
       const chatId = initData.chatId;
-
       const content = JSON.stringify({
         kind: 'share',
         itemType: 'publication',
@@ -334,18 +306,12 @@ const SocialPage: React.FC = () => {
 
       const sendRes = await fetch('http://localhost:3000/chat/send', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ chatId: String(chatId), content }),
       });
 
       const sendData = await sendRes.json().catch(() => ({}));
-
-      if (!sendRes.ok || !sendData.success) {
-        throw new Error(sendData.message || 'Failed to send message');
-      }
+      if (!sendRes.ok || !sendData.success) throw new Error(sendData.message || 'Failed to send message');
 
       await sharePost(selectedPost.id);
       await refreshCommunityState();
@@ -354,20 +320,13 @@ const SocialPage: React.FC = () => {
     }
   };
 
-  // "Add as friend" (immediate mutual friendship) removed — use friend requests only.
-
   const handleSendFriendRequest = async (receiverUsername: string) => {
     const token = getAuthToken();
-
-    if (!token) {
-      navigate('/login');
-      return;
-    }
+    if (!token) { navigate('/login'); return; }
 
     try {
       setAddingFriendUsername(receiverUsername);
       setFriendSearchError('');
-
       await sendFriendRequest(receiverUsername);
       await fetchFriendRequests().then(setFriendRequests);
     } catch (requestError) {
@@ -401,124 +360,31 @@ const SocialPage: React.FC = () => {
     }
   };
 
+  const openEventModal = (eventId: number) => {
+    const ev = availableEvents.find((e) => e.id === eventId);
+    if (ev) setSelectedEventForModal(ev);
+  };
+
   return (
     <PageLayout>
       <div className='mx-auto w-[82%] py-8'>
         <div className='grid gap-8 xl:grid-cols-[2fr_1fr]'>
           <section className='space-y-6'>
-            <div className='border-4 border-[#fff3b0] bg-[#1a0f10] p-6'>
-              <h1 className='text-5xl font-bold text-[#fff3b0]'>SOCIAL</h1>
-              <p className='mt-3 text-[#a89060]'>Stories, publications, comments, shares, and favorites in one feed.</p>
-            </div>
-
-            <form onSubmit={handleCreatePublication} className='border-4 border-[#483d30] bg-[#1a0f10] p-6 space-y-5'>
+            <div className='border-4 border-[#fff3b0] bg-[#1a0f10] p-6 flex items-center justify-between gap-4'>
               <div>
-                <h2 className='text-2xl font-bold text-[#fff3b0]'>Create a Publication</h2>
-                <p className='text-[#a89060] mt-1 text-sm'>Share a moment from a cultural event with your community.</p>
+                <h1 className='text-5xl font-bold text-[#fff3b0]'>SOCIAL</h1>
+                <p className='mt-3 text-[#a89060]'>Publications, comments, shares, and favorites in one feed.</p>
               </div>
-
-              <div className='flex flex-col gap-4 md:flex-row'>
-                <input
-                  type='text'
-                  value={composerCaption}
-                  onChange={(event) => setComposerCaption(event.target.value)}
-                  placeholder='Write a caption...'
-                  className='flex-1 border-2 border-[#483d30] bg-[#120707] px-4 py-3 text-[#fff3b0] placeholder-[#7e6a4a] outline-none focus:border-[#fff3b0]'
-                />
-                <input
-                  type='text'
-                  value={composerLocation}
-                  onChange={(event) => setComposerLocation(event.target.value)}
-                  placeholder='Location'
-                  className='md:w-56 border-2 border-[#483d30] bg-[#120707] px-4 py-3 text-[#fff3b0] placeholder-[#7e6a4a] outline-none focus:border-[#fff3b0]'
-                />
-              </div>
-
-              <div>
-                <label className='block text-xs uppercase tracking-[0.2em] font-semibold text-[#fff3b0] mb-2'>
-                  Tag an Event <span className='text-[#e09f3e]'>*</span>
-                </label>
-                <select
-                  required
-                  value={composerEventId}
-                  onChange={(event) => setComposerEventId(event.target.value)}
-                  className='w-full border-2 border-[#483d30] bg-[#120707] px-4 py-3 text-[#fff3b0] outline-none focus:border-[#fff3b0]'
-                >
-                  <option value=''>Select an event to tag...</option>
-                  {availableEvents.map((ev) => (
-                    <option key={ev.id} value={ev.id}>{ev.title} — {ev.date}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className='space-y-3'>
-                <label className='block text-xs uppercase tracking-[0.2em] font-semibold text-[#fff3b0]'>Media</label>
-                <div className='flex gap-2 mb-3'>
-                  <button
-                    type='button'
-                    onClick={() => setComposerMediaType('image')}
-                    className={`border-2 px-4 py-2 font-semibold transition ${composerMediaType === 'image' ? 'border-[#fff3b0] bg-[#fff3b0] text-[#540b0e]' : 'border-[#483d30] text-[#fff3b0] hover:border-[#fff3b0]'}`}
-                  >
-                    Image
-                  </button>
-                  <button
-                    type='button'
-                    onClick={() => setComposerMediaType('video')}
-                    className={`border-2 px-4 py-2 font-semibold transition ${composerMediaType === 'video' ? 'border-[#fff3b0] bg-[#fff3b0] text-[#540b0e]' : 'border-[#483d30] text-[#fff3b0] hover:border-[#fff3b0]'}`}
-                  >
-                    Video
-                  </button>
-                </div>
-                <label className='block cursor-pointer border-2 border-[#483d30] bg-[#120707] px-4 py-3'>
-                  <input
-                    type='file'
-                    accept='.png,.jpg,.jpeg,.mp4,.webm,.ogg,image/png,image/jpeg,video/mp4,video/webm,video/ogg'
-                    onChange={handleComposerImageUpload}
-                    className='w-full text-sm text-[#fff3b0] file:mr-4 file:border-0 file:bg-[#fff3b0] file:px-4 file:py-2 file:text-[#540b0e] hover:file:bg-[#e09f3e] cursor-pointer'
-                  />
-                </label>
-              </div>
-
-              {composerImage ? (
-                <div className='overflow-hidden border-2 border-[#483d30] bg-[#120707]'>
-                  {composerMediaType === 'video' ? (
-                    <video src={composerImage} className='h-56 w-full object-cover' controls muted />
-                  ) : (
-                    <img src={composerImage} alt='Publication preview' className='h-56 w-full object-cover' />
-                  )}
-                </div>
-              ) : null}
-
-              <div className='flex justify-end border-t border-[#483d30] pt-4'>
-                <button
-                  type='submit'
-                  className='border-2 border-[#fff3b0] bg-[#fff3b0] px-6 py-3 font-bold text-[#540b0e] transition hover:bg-[#1a0f10] hover:text-[#fff3b0]'
-                >
-                  Publish
-                </button>
-              </div>
-            </form>
-
-            <div className='border-4 border-[#483d30] bg-[#1a0f10] p-4'>
-              <div className='flex gap-4 overflow-x-auto pb-2'>
-                {stories.map((story) => (
-                  <article key={story.id} className='min-w-[170px] max-w-[170px] flex-shrink-0 border border-[#483d30] bg-[#120707] p-3'>
-                    <div className='relative h-56 overflow-hidden'>
-                      <img src={story.image} alt={story.label} className='h-full w-full object-cover' />
-                      <div className='absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#0b0506] to-transparent p-3'>
-                        <p className='text-sm font-bold text-[#fff3b0]'>{story.label}</p>
-                      </div>
-                    </div>
-                    <div className='mt-3 flex items-center gap-3'>
-                      <img src={story.avatar} alt={story.author} className='h-10 w-10 rounded-full object-cover' />
-                      <div>
-                        <p className='text-sm font-semibold text-[#fff3b0]'>{story.author}</p>
-                        <p className='text-xs text-[#a89060]'>Story</p>
-                      </div>
-                    </div>
-                  </article>
-                ))}
-              </div>
+              <button
+                type='button'
+                onClick={() => {
+                  if (!isLogged) { navigate('/login'); return; }
+                  setShowComposer(true);
+                }}
+                className='border-2 border-[#fff3b0] bg-[#fff3b0] px-6 py-3 font-bold text-[#540b0e] transition hover:bg-[#1a0f10] hover:text-[#fff3b0] whitespace-nowrap'
+              >
+                + New Post
+              </button>
             </div>
 
             {friendContacts.length === 0 ? (
@@ -550,19 +416,28 @@ const SocialPage: React.FC = () => {
               {posts.map((post) => (
                 <article key={post.id} className='overflow-hidden border-4 border-[#483d30] bg-[#1a0f10]'>
                   <div className='flex items-center gap-3 border-b border-[#483d30] px-5 py-4'>
-                          <button type='button' onClick={() => navigate(`/profile/${(post as any).username}`)} className='p-0 border-0 bg-transparent'>
-                            <img src={post.avatar} alt={post.author} className='h-12 w-12 rounded-full object-cover' />
-                          </button>
-                          <div className='flex-1'>
-                            <div className='flex items-center gap-3'>
-                              <button type='button' onClick={() => navigate(`/profile/${(post as any).username}`)} className='p-0 border-0 bg-transparent text-left'>
-                                <h3 className='text-xl font-bold text-[#fff3b0]'>{post.author}</h3>
-                              </button>
+                    <button type='button' onClick={() => navigate(`/profile/${post.username}`)} className='p-0 border-0 bg-transparent'>
+                      <img src={post.avatar} alt={post.author} className='h-12 w-12 rounded-full object-cover' />
+                    </button>
+                    <div className='flex-1 min-w-0'>
+                      <div className='flex items-center gap-3 flex-wrap'>
+                        <button type='button' onClick={() => navigate(`/profile/${post.username}`)} className='p-0 border-0 bg-transparent text-left'>
+                          <h3 className='text-xl font-bold text-[#fff3b0]'>{post.author}</h3>
+                        </button>
                         {post.isMine ? (
                           <span className='border border-[#fff3b0] px-2 py-1 text-[11px] uppercase tracking-[0.2em] text-[#fff3b0]'>Your post</span>
                         ) : null}
                       </div>
                       <p className='text-sm text-[#a89060]'>{post.location}</p>
+                      {post.eventId && post.eventTitle ? (
+                        <button
+                          type='button'
+                          onClick={() => openEventModal(post.eventId!)}
+                          className='mt-1 flex items-center gap-1 text-xs font-semibold text-[#e09f3e] hover:text-[#fff3b0] transition'
+                        >
+                          <span className='text-[#a89060]'>Event:</span> {post.eventTitle} →
+                        </button>
+                      ) : null}
                     </div>
                   </div>
 
@@ -570,9 +445,7 @@ const SocialPage: React.FC = () => {
                     {post.mediaType === 'video' ? (
                       <>
                         <video
-                          ref={(node) => {
-                            videoRefs.current.set(post.id, node);
-                          }}
+                          ref={(node) => { videoRefs.current.set(post.id, node); }}
                           src={post.image}
                           className='h-[420px] w-full object-cover'
                           playsInline
@@ -745,8 +618,8 @@ const SocialPage: React.FC = () => {
                   <p className='text-2xl font-bold text-[#fff3b0]'>{posts.length}</p>
                 </div>
                 <div className='border border-[#483d30] bg-[#120707] px-4 py-3'>
-                  <p className='text-[#bf9a57]'>Stories</p>
-                  <p className='text-2xl font-bold text-[#fff3b0]'>{stories.length}</p>
+                  <p className='text-[#bf9a57]'>Likes</p>
+                  <p className='text-2xl font-bold text-[#fff3b0]'>{posts.reduce((count, post) => count + post.likes, 0)}</p>
                 </div>
                 <div className='border border-[#483d30] bg-[#120707] px-4 py-3'>
                   <p className='text-[#bf9a57]'>Shared</p>
@@ -758,15 +631,117 @@ const SocialPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Publication composer modal */}
+      {showComposer ? (
+        <div className='fixed inset-0 z-[9999] flex items-center justify-center bg-[#0b0506]/80 px-4 py-8 backdrop-blur-sm'>
+          <div className='max-h-[90vh] w-full max-w-2xl overflow-y-auto border-4 border-[#fff3b0] bg-[#1a0f10] shadow-[0_20px_80px_rgba(0,0,0,0.55)]'>
+            <div className='relative border-b border-[#483d30] px-6 py-5'>
+              <h2 className='text-3xl font-bold text-[#fff3b0]'>Create a Publication</h2>
+              <p className='mt-1 text-sm text-[#a89060]'>Share a moment from a cultural event with your community.</p>
+              <button
+                type='button'
+                onClick={() => setShowComposer(false)}
+                className='absolute right-4 top-4 h-10 w-10 border border-[#fff3b0] bg-[#1a0f10]/80 text-xl font-bold text-[#fff3b0] transition hover:bg-[#fff3b0] hover:text-[#1a0f10]'
+                aria-label='Close composer'
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleCreatePublication} className='space-y-5 p-6'>
+              <div className='flex flex-col gap-4 md:flex-row'>
+                <input
+                  type='text'
+                  value={composerCaption}
+                  onChange={(event) => setComposerCaption(event.target.value)}
+                  placeholder='Write a caption...'
+                  className='flex-1 border-2 border-[#483d30] bg-[#120707] px-4 py-3 text-[#fff3b0] placeholder-[#7e6a4a] outline-none focus:border-[#fff3b0]'
+                />
+                <input
+                  type='text'
+                  value={composerLocation}
+                  onChange={(event) => setComposerLocation(event.target.value)}
+                  placeholder='Location'
+                  className='md:w-48 border-2 border-[#483d30] bg-[#120707] px-4 py-3 text-[#fff3b0] placeholder-[#7e6a4a] outline-none focus:border-[#fff3b0]'
+                />
+              </div>
+
+              <div>
+                <label className='block text-xs uppercase tracking-[0.2em] font-semibold text-[#fff3b0] mb-2'>
+                  Tag an Event <span className='text-[#e09f3e]'>*</span>
+                </label>
+                <select
+                  required
+                  value={composerEventId}
+                  onChange={(event) => setComposerEventId(event.target.value)}
+                  className='w-full border-2 border-[#483d30] bg-[#120707] px-4 py-3 text-[#fff3b0] outline-none focus:border-[#fff3b0]'
+                >
+                  <option value=''>Select an event to tag...</option>
+                  {availableEvents.map((ev) => (
+                    <option key={ev.id} value={ev.id}>{ev.title} — {ev.date}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className='space-y-3'>
+                <label className='block text-xs uppercase tracking-[0.2em] font-semibold text-[#fff3b0]'>Media</label>
+                <div className='flex gap-2 mb-3'>
+                  <button
+                    type='button'
+                    onClick={() => setComposerMediaType('image')}
+                    className={`border-2 px-4 py-2 font-semibold transition ${composerMediaType === 'image' ? 'border-[#fff3b0] bg-[#fff3b0] text-[#540b0e]' : 'border-[#483d30] text-[#fff3b0] hover:border-[#fff3b0]'}`}
+                  >
+                    Image
+                  </button>
+                  <button
+                    type='button'
+                    onClick={() => setComposerMediaType('video')}
+                    className={`border-2 px-4 py-2 font-semibold transition ${composerMediaType === 'video' ? 'border-[#fff3b0] bg-[#fff3b0] text-[#540b0e]' : 'border-[#483d30] text-[#fff3b0] hover:border-[#fff3b0]'}`}
+                  >
+                    Video
+                  </button>
+                </div>
+                <label className='block cursor-pointer border-2 border-[#483d30] bg-[#120707] px-4 py-3'>
+                  <input
+                    type='file'
+                    accept='.png,.jpg,.jpeg,.mp4,.webm,.ogg,image/png,image/jpeg,video/mp4,video/webm,video/ogg'
+                    onChange={handleComposerImageUpload}
+                    className='w-full text-sm text-[#fff3b0] file:mr-4 file:border-0 file:bg-[#fff3b0] file:px-4 file:py-2 file:text-[#540b0e] hover:file:bg-[#e09f3e] cursor-pointer'
+                  />
+                </label>
+              </div>
+
+              {composerImage ? (
+                <div className='overflow-hidden border-2 border-[#483d30] bg-[#120707]'>
+                  {composerMediaType === 'video' ? (
+                    <video src={composerImage} className='h-56 w-full object-cover' controls muted />
+                  ) : (
+                    <img src={composerImage} alt='Publication preview' className='h-56 w-full object-cover' />
+                  )}
+                </div>
+              ) : null}
+
+              <div className='flex justify-end border-t border-[#483d30] pt-4'>
+                <button
+                  type='submit'
+                  className='border-2 border-[#fff3b0] bg-[#fff3b0] px-6 py-3 font-bold text-[#540b0e] transition hover:bg-[#1a0f10] hover:text-[#fff3b0]'
+                >
+                  Publish
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Post details modal */}
       {selectedPost ? (
         <div className='fixed inset-0 z-[9999] flex items-center justify-center bg-[#0b0506]/80 px-4 py-8 backdrop-blur-sm'>
           <div className='max-h-[90vh] w-full max-w-4xl overflow-y-auto border-4 border-[#fff3b0] bg-[#1a0f10] shadow-[0_20px_80px_rgba(0,0,0,0.55)]'>
             <div className='relative'>
               {selectedPost.mediaType === 'video' ? (
                 <video
-                  ref={(node) => {
-                    videoRefs.current.set(selectedPost.id, node);
-                  }}
+                  ref={(node) => { videoRefs.current.set(selectedPost.id, node); }}
                   src={selectedPost.image}
                   className='h-72 w-full object-cover'
                   playsInline
@@ -794,11 +769,20 @@ const SocialPage: React.FC = () => {
             </div>
 
             <div className='space-y-5 px-6 py-6'>
-                <div className='space-y-2'>
-                <button type='button' onClick={() => navigate(`/profile/${(selectedPost as any).username}`)} className='p-0 border-0 bg-transparent text-left'>
+              <div className='space-y-1'>
+                <button type='button' onClick={() => navigate(`/profile/${selectedPost.username}`)} className='p-0 border-0 bg-transparent text-left'>
                   <h2 className='text-4xl font-bold text-[#fff3b0]'>{selectedPost.author}</h2>
                 </button>
                 <p className='text-lg text-[#a89060]'>{selectedPost.location}</p>
+                {selectedPost.eventId && selectedPost.eventTitle ? (
+                  <button
+                    type='button'
+                    onClick={() => { closePublication(); openEventModal(selectedPost.eventId!); }}
+                    className='flex items-center gap-1 text-sm font-semibold text-[#e09f3e] hover:text-[#fff3b0] transition'
+                  >
+                    <span className='text-[#a89060]'>Event:</span> {selectedPost.eventTitle} →
+                  </button>
+                ) : null}
               </div>
 
               <p className='leading-8 text-[#f1e2ba]'>{selectedPost.caption}</p>
@@ -888,6 +872,14 @@ const SocialPage: React.FC = () => {
             </div>
           </div>
         </div>
+      ) : null}
+
+      {/* Event details modal triggered from post event tag */}
+      {selectedEventForModal ? (
+        <EventDetailsModal
+          event={selectedEventForModal}
+          onClose={() => setSelectedEventForModal(null)}
+        />
       ) : null}
     </PageLayout>
   );

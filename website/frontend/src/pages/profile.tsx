@@ -75,6 +75,10 @@ const ProfilePage: React.FC = () => {
     status: string;
   }>>([]);
 
+  const [userPublications, setUserPublications] = React.useState<Array<{
+    id: number; image: string; caption: string; location: string; likes: number; favorites: number; shares: number; eventId: number | null; eventTitle: string | null; comments: unknown[];
+  }>>([]);
+
   const profileUsername = params.username || currentUser?.username || '';
   const viewingOtherProfile = Boolean(params.username && params.username !== currentUser?.username);
   const activeProfile = publicProfile;
@@ -149,6 +153,15 @@ const ProfilePage: React.FC = () => {
         if (!viewingOtherProfile && data.profile?.preferences) {
           updateStoredUser({ preferences: data.profile.preferences });
         }
+
+        // Load publications for all profiles
+        const pubRes = await fetch(`${API_BASE_URL}/social/profiles/${encodeURIComponent(profileUsername)}/publications`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
+        const pubData = await pubRes.json();
+        if (pubRes.ok && pubData.success) {
+          setUserPublications(pubData.publications || []);
+        }
       } catch (loadError) {
         setProfileError(loadError instanceof Error ? loadError.message : 'Failed to load profile');
         setPublicProfile(null);
@@ -178,7 +191,6 @@ const ProfilePage: React.FC = () => {
   const displayLocation = activeProfile?.location || (isSelfProfile ? 'Location not set' : 'Location hidden');
   const displayPreferences = activeProfile?.preferences || currentUser?.preferences || [];
   const attendedEvents = communityState.attendedEvents;
-  const publications = communityState.posts.filter((post) => post.isMine);
 
   const handleFollowToggle = async () => {
     const token = getAuthToken();
@@ -527,38 +539,39 @@ const ProfilePage: React.FC = () => {
                 </div>
               ) : null}
 
-              {isSelfProfile && currentUser?.role !== 'professional' ? (
-                <div>
-                  <div className='mb-4 flex items-end justify-between gap-4'>
-                    <div>
-                      <h2 className='text-3xl font-bold text-[#fff3b0]'>Publications</h2>
-                      <p className='text-[#a89060]'>Recent posts, images, and interactions.</p>
-                    </div>
-                    <span className='text-sm uppercase tracking-[0.2em] text-[#a89060]'>{publications.length} items</span>
+              <div>
+                <div className='mb-4 flex items-end justify-between gap-4'>
+                  <div>
+                    <h2 className='text-3xl font-bold text-[#fff3b0]'>Publications</h2>
+                    <p className='text-[#a89060]'>Recent posts, images, and interactions.</p>
                   </div>
-                  <div className='flex gap-4 overflow-x-auto pb-3'>
-                    {publications.length > 0 ? publications.map((publication) => (
-                      <article key={publication.id} className='min-w-[280px] flex-shrink-0 border-2 border-[#483d30] bg-[#120707] overflow-hidden'>
-                        <div className='h-44 overflow-hidden'>
-                          <img src={publication.image} alt={publication.caption} className='h-full w-full object-cover' />
-                        </div>
-                        <div className='space-y-2 p-4'>
-                          <h3 className='text-xl font-bold text-[#fff3b0]'>{publication.caption}</h3>
-                          <p className='text-[#a89060]'>{publication.location}</p>
-                          <div className='flex items-center justify-between text-sm text-[#a89060]'>
-                            <span>{publication.likes} likes</span>
-                            <span>{publication.comments.length} comments</span>
-                          </div>
-                        </div>
-                      </article>
-                    )) : (
-                      <div className='border-2 border-[#483d30] bg-[#120707] px-4 py-6 text-[#a89060]'>
-                        No publications yet.
-                      </div>
-                    )}
-                  </div>
+                  <span className='text-sm uppercase tracking-[0.2em] text-[#a89060]'>{userPublications.length} items</span>
                 </div>
-              ) : null}
+                <div className='flex gap-4 overflow-x-auto pb-3'>
+                  {userPublications.length > 0 ? userPublications.map((publication) => (
+                    <article key={publication.id} className='min-w-[280px] flex-shrink-0 border-2 border-[#483d30] bg-[#120707] overflow-hidden'>
+                      <div className='h-44 overflow-hidden'>
+                        <img src={publication.image} alt={publication.caption} className='h-full w-full object-cover' />
+                      </div>
+                      <div className='space-y-2 p-4'>
+                        <h3 className='text-xl font-bold text-[#fff3b0]'>{publication.caption}</h3>
+                        <p className='text-[#a89060]'>{publication.location}</p>
+                        <div className='flex items-center justify-between text-sm text-[#a89060]'>
+                          <span>{publication.likes} likes</span>
+                          <span>{(publication.comments as unknown[]).length} comments</span>
+                        </div>
+                        {publication.eventTitle ? (
+                          <p className='text-xs text-[#e09f3e] uppercase tracking-[0.1em]'>{publication.eventTitle}</p>
+                        ) : null}
+                      </div>
+                    </article>
+                  )) : (
+                    <div className='border-2 border-[#483d30] bg-[#120707] px-4 py-6 text-[#a89060]'>
+                      No publications yet.
+                    </div>
+                  )}
+                </div>
+              </div>
             </section>
           ) : null}
         </div>

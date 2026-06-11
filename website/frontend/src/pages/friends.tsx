@@ -4,6 +4,7 @@ import PageLayout from '../components/pageLayout';
 import { getAuthToken, getStoredUser, isAuthenticated, isProfessionalRole } from '../utils/auth';
 
 const API_BASE_URL = 'http://localhost:3000';
+const WS_URL = 'ws://localhost:3000/ws';
 
 type FriendContact = {
   chatId?: number | null;
@@ -30,18 +31,9 @@ type SharePayload = {
 };
 
 const isSharePayload = (value: unknown): value is SharePayload => {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  const payload = value as Record<string, unknown>;
-  return (
-    payload.kind === 'share' &&
-    typeof payload.itemType === 'string' &&
-    typeof payload.itemId === 'number' &&
-    typeof payload.title === 'string' &&
-    typeof payload.url === 'string'
-  );
+  if (!value || typeof value !== 'object') return false;
+  const p = value as Record<string, unknown>;
+  return p.kind === 'share' && typeof p.itemType === 'string' && typeof p.itemId === 'number' && typeof p.title === 'string' && typeof p.url === 'string';
 };
 
 const parseSharePayload = (content: string): SharePayload | null => {
@@ -72,38 +64,85 @@ const FriendsPage: React.FC = () => {
   const [sending, setSending] = React.useState(false);
   const [error, setError] = React.useState('');
   const [draft, setDraft] = React.useState('');
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
+
+  // WebSocket ref
+  const wsRef = React.useRef<WebSocket | null>(null);
+  const currentChatIdRef = React.useRef<number | null>(null);
 
   const selectedFriend = React.useMemo(() => {
     if (!selectedChatId) {
       return activeChatUsername ? ({ username: activeChatUsername, name: activeChatUsername, role: 'customer' } as FriendContact) : null;
     }
-
-    return friendContacts.find((friend) => friend.chatId === selectedChatId) ?? (activeChatUsername ? ({ username: activeChatUsername, name: activeChatUsername, role: 'customer', chatId: selectedChatId } as FriendContact) : null);
+    return friendContacts.find((f) => f.chatId === selectedChatId) ?? (activeChatUsername ? ({ username: activeChatUsername, name: activeChatUsername, role: 'customer', chatId: selectedChatId } as FriendContact) : null);
   }, [activeChatUsername, friendContacts, selectedChatId]);
+
+  // Scroll to bottom when messages change
+  React.useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Setup WebSocket connection
+  React.useEffect(() => {
+    const token = getAuthToken();
+    if (!token || !loggedIn) return;
+
+    const ws = new WebSocket(`${WS_URL}?token=${encodeURIComponent(token)}`);
+    wsRef.current = ws;
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data as string) as { type: string; chatId?: number; message?: ChatMessage };
+        if (msg.type === 'new_message' && msg.chatId === currentChatIdRef.current && msg.message) {
+          setMessages((prev) => {
+            // Avoid duplicates
+            if (prev.some((m) => m.id === msg.message!.id)) return prev;
+            return [...prev, msg.message!];
+          });
+        }
+      } catch { /* ignore parse errors */ }
+    };
+
+    ws.onerror = () => { /* silent */ };
+
+    return () => {
+      ws.close();
+      wsRef.current = null;
+    };
+  }, [loggedIn]);
+
+  // Join chat room via WS when selectedChatId changes
+  React.useEffect(() => {
+    currentChatIdRef.current = selectedChatId;
+    if (selectedChatId && wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'join_chat', chatId: selectedChatId }));
+    }
+  }, [selectedChatId]);
 
   const loadFriends = React.useCallback(async () => {
     const token = getAuthToken();
-
-    if (!token) {
-      return;
-    }
-
+    if (!token) return;
     try {
       setLoadingFriends(true);
       setError('');
-
-      const response = await fetch(`${API_BASE_URL}/social/friends`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || 'Failed to load friends');
+      const [socialRes, chatRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/social/friends`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE_URL}/chat/friends`, { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      const socialData = await socialRes.json();
+      const chatData = await chatRes.json();
+      if (!socialRes.ok || !socialData.success) throw new Error(socialData.message || 'Failed to load friends');
+      const socialFriends: FriendContact[] = socialData.friends as FriendContact[];
+      const merged: FriendContact[] = [...socialFriends];
+      if (chatRes.ok && chatData.success) {
+        const chatContacts = chatData.chats as Array<{ id: number; username: string; name: string; role: string }>;
+        for (const c of chatContacts) {
+          const existing = merged.find((f) => f.username === c.username);
+          if (!existing) merged.push({ chatId: c.id, username: c.username, name: c.name, role: c.role });
+          else if (!existing.chatId) existing.chatId = c.id;
+        }
       }
-
-      setFriendContacts(data.friends as FriendContact[]);
+      setFriendContacts(merged);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Failed to load friends');
     } finally {
@@ -113,26 +152,15 @@ const FriendsPage: React.FC = () => {
 
   const loadMessages = React.useCallback(async (chatId: number) => {
     const token = getAuthToken();
-
-    if (!token) {
-      return;
-    }
-
+    if (!token) return;
     try {
       setLoadingMessages(true);
       setError('');
-
       const response = await fetch(`${API_BASE_URL}/chat/messages/${chatId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || 'Failed to load messages');
-      }
-
+      if (!response.ok || !data.success) throw new Error(data.message || 'Failed to load messages');
       setMessages(data.messages as ChatMessage[]);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Failed to load messages');
@@ -143,62 +171,32 @@ const FriendsPage: React.FC = () => {
   }, []);
 
   React.useEffect(() => {
-    if (!loggedIn) {
-      navigate('/login');
-      return;
-    }
-
+    if (!loggedIn) { navigate('/login'); return; }
     void loadFriends();
   }, [loggedIn, navigate, loadFriends]);
 
   React.useEffect(() => {
-    if (!selectedChatId) {
-      setMessages([]);
-      return;
-    }
-
+    if (!selectedChatId) { setMessages([]); return; }
     void loadMessages(selectedChatId);
   }, [selectedChatId, loadMessages]);
 
   React.useEffect(() => {
     const targetUsername = searchParams.get('chat');
-
-    if (!targetUsername) {
-      setActiveChatUsername('');
-      return;
-    }
-
+    if (!targetUsername) { setActiveChatUsername(''); return; }
     setActiveChatUsername(targetUsername);
-
-    const matchedFriend = friendContacts.find((friend) => friend.username === targetUsername);
-
+    const matchedFriend = friendContacts.find((f) => f.username === targetUsername);
     const openChat = async () => {
-      if (matchedFriend?.chatId) {
-        setSelectedChatId(matchedFriend.chatId);
-        return;
-      }
-
+      if (matchedFriend?.chatId) { setSelectedChatId(matchedFriend.chatId); return; }
       const token = getAuthToken();
-      if (!token) {
-        return;
-      }
-
+      if (!token) return;
       try {
         const response = await fetch(`${API_BASE_URL}/chat/initiate`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ friendUsername: targetUsername }),
         });
-
         const data = await response.json();
-
-        if (!response.ok || !data.success) {
-          throw new Error(data.message || 'Unable to open chat');
-        }
-
+        if (!response.ok || !data.success) throw new Error(data.message || 'Unable to open chat');
         setSelectedChatId(Number(data.chatId));
         setActiveChatUsername(targetUsername);
         await loadFriends();
@@ -206,40 +204,22 @@ const FriendsPage: React.FC = () => {
         setError(chatError instanceof Error ? chatError.message : 'Unable to open chat');
       }
     };
-
     void openChat();
   }, [friendContacts, loadFriends, searchParams]);
 
   const handleOpenChat = async (friend: FriendContact) => {
-    if (friend.chatId) {
-      setSelectedChatId(friend.chatId);
-      return;
-    }
-
+    if (friend.chatId) { setSelectedChatId(friend.chatId); return; }
     const token = getAuthToken();
-    if (!token) {
-      navigate('/login');
-      return;
-    }
-
+    if (!token) { navigate('/login'); return; }
     try {
       setError('');
-
       const response = await fetch(`${API_BASE_URL}/chat/initiate`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ friendUsername: friend.username }),
       });
-
       const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || 'Unable to open chat');
-      }
-
+      if (!response.ok || !data.success) throw new Error(data.message || 'Unable to open chat');
       setSelectedChatId(Number(data.chatId));
       setActiveChatUsername(friend.username);
       await loadFriends();
@@ -249,50 +229,41 @@ const FriendsPage: React.FC = () => {
   };
 
   const handleSendMessage = async () => {
-    if (!selectedChatId || !draft.trim()) {
+    if (!selectedChatId || !draft.trim()) return;
+
+    const trimmedDraft = draft.trim();
+    setDraft('');
+
+    // Try WebSocket first for real-time delivery
+    const ws = wsRef.current;
+    if (ws?.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'send_message', chatId: selectedChatId, content: trimmedDraft }));
       return;
     }
 
+    // Fallback to REST if WS not available
     const token = getAuthToken();
-
-    if (!token) {
-      navigate('/login');
-      return;
-    }
-
+    if (!token) { navigate('/login'); return; }
     try {
       setSending(true);
       setError('');
-
       const response = await fetch(`${API_BASE_URL}/chat/send`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          chatId: String(selectedChatId),
-          content: draft.trim(),
-        }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ chatId: String(selectedChatId), content: trimmedDraft }),
       });
       const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || 'Failed to send message');
-      }
-
-      setDraft('');
+      if (!response.ok || !data.success) throw new Error(data.message || 'Failed to send message');
       await loadMessages(selectedChatId);
     } catch (sendError) {
       setError(sendError instanceof Error ? sendError.message : 'Failed to send message');
+      setDraft(trimmedDraft);
     } finally {
       setSending(false);
     }
   };
 
-  if (!loggedIn) {
-    return null;
-  }
+  if (!loggedIn) return null;
 
   return (
     <PageLayout>
@@ -361,7 +332,12 @@ const FriendsPage: React.FC = () => {
           </div>
 
           <div className='w-2/3 border-4 border-[#fff3b0] bg-[#1a0f10] p-6 flex flex-col'>
-            <h2 className='text-[#fff3b0] text-2xl font-bold mb-4'>Messages</h2>
+            <div className='flex items-center justify-between mb-4'>
+              <h2 className='text-[#fff3b0] text-2xl font-bold'>Messages</h2>
+              {selectedChatId && wsRef.current?.readyState === WebSocket.OPEN ? (
+                <span className='text-xs text-[#4caf50] border border-[#4caf50] px-2 py-0.5'>● Live</span>
+              ) : null}
+            </div>
 
             {selectedFriend ? (
               <div className='flex flex-col h-full mt-auto'>
@@ -377,7 +353,7 @@ const FriendsPage: React.FC = () => {
                   <p className='text-[#a89060]'>@{selectedFriend.username}</p>
                 </div>
 
-                <div className='flex-1 overflow-y-auto mb-4 space-y-2'>
+                <div className='flex-1 overflow-y-auto mb-4 space-y-2 min-h-[200px] max-h-[400px]'>
                   {loadingMessages ? (
                     <p className='text-[#a89060] text-center mt-8'>Loading messages...</p>
                   ) : messages.length === 0 ? (
@@ -386,7 +362,6 @@ const FriendsPage: React.FC = () => {
                     messages.map((message) => {
                       const fromCurrentUser = message.username === currentUser?.username;
                       const sharedPayload = parseSharePayload(message.content);
-
                       return (
                         <div key={message.id} className={`flex ${fromCurrentUser ? 'justify-end' : 'justify-start'}`}>
                           <div className={`max-w-xs px-4 py-2 rounded ${fromCurrentUser ? 'bg-[#e3a63e] text-[#1a0f10]' : 'bg-[#483d30] text-[#fff3b0]'}`}>
@@ -397,26 +372,21 @@ const FriendsPage: React.FC = () => {
                                 className='text-left w-full'
                                 aria-label={`Open shared ${sharedPayload.itemType}`}
                               >
-                                <p className='text-xs uppercase tracking-[0.2em] font-semibold'>
-                                  Shared {sharedPayload.itemType}
-                                </p>
+                                <p className='text-xs uppercase tracking-[0.2em] font-semibold'>Shared {sharedPayload.itemType}</p>
                                 <p className='mt-1 font-bold'>{sharedPayload.title}</p>
                                 {sharedPayload.body ? <p className='mt-1'>{sharedPayload.body}</p> : null}
-                                {sharedPayload.url ? (
-                                  <p className='mt-2 text-sm text-[#fff3b0] underline'>Open {sharedPayload.itemType}</p>
-                                ) : null}
+                                {sharedPayload.url ? <p className='mt-2 text-sm text-[#fff3b0] underline'>Open {sharedPayload.itemType}</p> : null}
                               </button>
                             ) : (
                               <p>{message.content}</p>
                             )}
-                            <p className='text-[10px] mt-1 opacity-80'>
-                              {new Date(message.sent_at).toLocaleString()}
-                            </p>
+                            <p className='text-[10px] mt-1 opacity-80'>{new Date(message.sent_at).toLocaleString()}</p>
                           </div>
                         </div>
                       );
                     })
                   )}
+                  <div ref={messagesEndRef} />
                 </div>
 
                 <div className='flex gap-2'>
@@ -424,12 +394,9 @@ const FriendsPage: React.FC = () => {
                     type='text'
                     value={draft}
                     placeholder='Type a message...'
-                    onChange={(event) => setDraft(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        event.preventDefault();
-                        void handleSendMessage();
-                      }
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') { e.preventDefault(); void handleSendMessage(); }
                     }}
                     className='flex-1 px-3 py-2 bg-[#2a1f20] border border-[#a89060] text-[#fff3b0] placeholder-[#8b7355] focus:outline-none'
                   />

@@ -13,6 +13,7 @@ import {
   getFollowStatus,
   getPublicProfile,
   getSocialFeed,
+  getUserPublications,
   listIncomingFriendRequests,
   listFriends,
   sendFriendRequest,
@@ -21,6 +22,7 @@ import {
   searchFriends,
   togglePublicationFavorite,
   togglePublicationLike,
+  updateUserProfile,
 } from '../services/social.service.js';
 
 const router = Router();
@@ -270,6 +272,29 @@ router.get('/friends/search', loginMiddleware, async (req: any, res) => {
     }
 
     res.status(200).json({ success: true, results: result.results });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+router.put('/profile', loginMiddleware, async (req: any, res) => {
+  try {
+    const { name, bio, location, preferences, password } = req.body;
+    const result = await updateUserProfile(req.user.username, { name, bio, location, preferences, password });
+    if (!result.ok) return res.status(result.status).json({ success: false, message: result.message });
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+router.get('/profiles/:username/publications', async (req: any, res) => {
+  try {
+    const result = await getUserPublications(req.params.username);
+    if (!result.ok) return res.status(result.status).json({ success: false, message: result.message });
+    res.status(200).json({ success: true, publications: result.publications });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: 'Internal server error' });

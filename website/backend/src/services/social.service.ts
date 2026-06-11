@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import pool from '../db.js';
 import { getUserByUsername } from './user.service.js';
 import { createNotification } from './notification.service.js';
@@ -7,6 +8,7 @@ type PublicationPayload = {
   image: string;
   location?: string;
   mediaType?: 'image' | 'video';
+  eventId?: number;
 };
 
 type PublicProfileReview = {
@@ -222,9 +224,12 @@ export async function getSocialFeed(username?: string) {
         COALESCE(pr.favorited, FALSE) AS "favoritedByMe",
         COALESCE(pr.shared, FALSE) AS "sharedByMe",
         COALESCE((p.user_id = $1), FALSE) AS "isMine",
+        p.event_id AS "eventId",
+        e.title AS "eventTitle",
         (${publicationCommentsQuery}) AS comments
      FROM publication p
      JOIN users u ON u.id = p.user_id
+     LEFT JOIN events e ON e.id = p.event_id
      LEFT JOIN publication_reactions pr
         ON pr.publication_id = p.id
        AND pr.user_id = $1
@@ -282,10 +287,10 @@ export async function createPublication(username: string, payload: PublicationPa
   }
 
   const result = await pool.query(
-    `INSERT INTO publication (user_id, media, media_type, publish_date, information, location)
-     VALUES ($1, $2, $3, NOW(), $4, $5)
+    `INSERT INTO publication (user_id, media, media_type, publish_date, information, location, event_id)
+     VALUES ($1, $2, $3, NOW(), $4, $5, $6)
      RETURNING id`,
-    [currentUser.id, payload.image, payload.mediaType || 'image', payload.caption.trim(), payload.location?.trim() || 'Festivo Feed'],
+    [currentUser.id, payload.image, payload.mediaType || 'image', payload.caption.trim(), payload.location?.trim() || 'Festivo Feed', payload.eventId || null],
   );
 
   return { ok: true as const, publicationId: result.rows[0].id };
@@ -705,6 +710,91 @@ export async function acceptFriendRequest(username: string, requestId: number) {
   } finally {
     client.release();
   }
+}
+
+export async function updateUserProfile(
+  username: string,
+  data: { name?: string; bio?: string; location?: string; preferences?: string[]; password?: string },
+) {
+  const user = await getUserByUsername(username);
+  if (!user) return { ok: false as const, status: 404, message: 'User not found' };
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const fields: string[] = [];
+    const values: unknown[] = [];
+    let idx = 1;
+
+    if (data.name !== undefined) { fields.push(`name = $${idx++}`); values.push(data.name.trim() || null); }
+    if (data.bio !== undefined) { fields.push(`information = $${idx++}`); values.push(data.bio.trim() || null); }
+    if (data.location !== undefined) { fields.push(`location = $${idx++}`); values.push(data.location.trim() || null); }
+    if (data.password) {
+      const hashed = await bcrypt.hash(data.password, 10);
+      fields.push(`pass = $${idx++}`);
+      values.push(hashed);
+    }
+
+    if (fields.length > 0) {
+      values.push(user.id);
+      await client.query(`UPDATE users SET ${fields.join(', ')} WHERE id = $${idx}`, values);
+    }
+
+    if (user.role === 'customer' && data.preferences !== undefined) {
+      await client.query('INSERT INTO customer (customer_id) VALUES ($1) ON CONFLICT DO NOTHING', [user.id]);
+      await client.query('DELETE FROM customer_preferences WHERE customer_id = $1', [user.id]);
+      for (const tag of data.preferences) {
+        await client.query('INSERT INTO tags (tag_name) VALUES ($1) ON CONFLICT DO NOTHING', [tag]);
+        await client.query(
+          'INSERT INTO customer_preferences (customer_id, tag_name) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+          [user.id, tag],
+        );
+      }
+    }
+
+    await client.query('COMMIT');
+    return { ok: true as const };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+export async function getUserPublications(targetUsername: string) {
+  const target = await getUserByUsername(targetUsername);
+  if (!target) return { ok: false as const, status: 404, message: 'User not found' };
+
+  const result = await pool.query(
+    `SELECT
+        p.id,
+        p.media AS image,
+        COALESCE(p.media_type, 'image') AS "mediaType",
+        p.information AS caption,
+        COALESCE(p.location, 'Festivo Feed') AS location,
+        p.likes,
+        p.favorites,
+        p.shares,
+        p.publish_date AS "publishDate",
+        p.event_id AS "eventId",
+        e.title AS "eventTitle",
+        (${publicationCommentsQuery}) AS comments
+     FROM publication p
+     LEFT JOIN events e ON e.id = p.event_id
+     WHERE p.user_id = $1
+     ORDER BY p.publish_date DESC, p.id DESC`,
+    [target.id],
+  );
+
+  return {
+    ok: true as const,
+    publications: result.rows.map((row) => ({
+      ...row,
+      comments: Array.isArray(row.comments) ? row.comments : [],
+    })),
+  };
 }
 
 export async function declineFriendRequest(username: string, requestId: number) {

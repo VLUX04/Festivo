@@ -50,8 +50,8 @@ export async function completeRegistration(payload: CompleteRegistrationPayload)
 		await client.query('BEGIN');
 
 		const result = await client.query(
-			'INSERT INTO users (username, name, email, pass, role, information) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
-			[payload.username, payload.name, payload.email, hashedPass, role, payload.bio ?? null],
+			'INSERT INTO users (username, name, email, pass, role, information, location) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
+			[payload.username, payload.name, payload.email, hashedPass, role, payload.bio ?? null, payload.location ?? null],
 		);
 		const userId = result.rows[0].id;
 

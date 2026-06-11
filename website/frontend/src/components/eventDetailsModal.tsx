@@ -4,7 +4,7 @@ import type { Event } from './event';
 import { getAuthToken, getStoredUser, isAuthenticated } from '../utils/auth';
 import { fetchFriendContacts, type FriendContact } from '../utils/community';
 
-const actionButtonClass = 'min-w-[170px] border-2 border-[#fff3b0] px-5 py-3 font-bold text-[#fff3b0] transition hover:bg-[#fff3b0] hover:text-[#1a0f10] disabled:cursor-not-allowed disabled:border-[#483d30] disabled:text-[#483d30]';
+const actionButtonClass = 'min-w-[170px] border-2 border-[#fff3b0] bg-[#1a0f10] px-5 py-3 font-bold text-[#fff3b0] transition hover:bg-[#fff3b0] hover:!text-[#1a0f10] disabled:cursor-not-allowed disabled:border-[#483d30] disabled:text-[#483d30]';
 
 type EventReview = {
   id: number;
@@ -319,7 +319,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                 type='button'
                 onClick={() => void handleAttend()}
                 disabled={attendLoading}
-                className={`${actionButtonClass} ${attending ? 'bg-[#fff3b0] text-[#1a0f10]' : 'bg-transparent'}`}
+                className={`${actionButtonClass} ${attending ? 'bg-[#fff3b0] !text-[#1a0f10]' : 'bg-transparent'}`}
               >
                 {attendLoading ? '...' : attending ? 'Cancel RSVP' : 'RSVP / Attend'}
               </button>
@@ -327,7 +327,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                 type='button'
                 onClick={() => void handleSave()}
                 disabled={saveLoading}
-                className={`${actionButtonClass} ${saved ? 'bg-[#fff3b0] text-[#1a0f10]' : 'bg-transparent'}`}
+                className={`${actionButtonClass} ${saved ? 'bg-[#fff3b0] !text-[#1a0f10]' : 'bg-transparent'}`}
               >
                 {saveLoading ? '...' : saved ? '★ Saved' : '☆ Save'}
               </button>
@@ -378,13 +378,24 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
           ) : null}
 
           <div className='border-t border-[#483d30] pt-5 space-y-4'>
-            <button
-              type='button'
-              onClick={toggleGallery}
-              className='text-2xl font-bold text-[#fff3b0] flex items-center gap-2'
-            >
-              Community Gallery {showGallery ? '▲' : '▼'}
-            </button>
+            <div className='flex items-center justify-between gap-4'>
+              <button
+                type='button'
+                onClick={toggleGallery}
+                className='text-2xl font-bold text-[#fff3b0] flex items-center gap-2'
+              >
+                Community Gallery {showGallery ? '▲' : '▼'}
+              </button>
+              {isLoggedIn && event.id ? (
+                <button
+                  type='button'
+                  onClick={() => navigate(`/social?eventId=${event.id}`)}
+                  className='border-2 border-[#e09f3e] px-4 py-2 text-sm font-bold text-[#e09f3e] transition hover:bg-[#e09f3e] hover:text-[#1a0f10] whitespace-nowrap'
+                >
+                  + Post about this event
+                </button>
+              ) : null}
+            </div>
             {showGallery ? (
               <div>
                 {galleryLoading ? (

@@ -13,6 +13,7 @@ export type CommunityComment = {
 export type CommunityPost = {
   id: number;
   author: string;
+  username?: string;
   avatar: string;
   image: string;
   mediaType: 'image' | 'video';
@@ -26,6 +27,8 @@ export type CommunityPost = {
   favoritedByMe: boolean;
   sharedByMe: boolean;
   isMine: boolean;
+  eventId?: number | null;
+  eventTitle?: string | null;
 };
 
 export type CommunityStory = {

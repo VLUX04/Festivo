@@ -95,7 +95,7 @@ const Header: React.FC = () => {
                             <button
                                 type='button'
                                 onClick={() => setShowNotifications((v) => !v)}
-                                className='relative flex items-center justify-center h-8 w-8 border border-[#483d30] text-[#fff3b0] hover:border-[#fff3b0] transition'
+                                className='relative flex items-center justify-center h-8 w-8 border border-transparent text-[#fff3b0] hover:border-[#fff3b0] transition'
                                 aria-label='Notifications'
                             >
                                 <span className='text-lg'>🔔</span>
@@ -108,7 +108,7 @@ const Header: React.FC = () => {
                             {showNotifications ? (
                                 <>
                                     <div className='fixed inset-0 z-[9998]' onClick={() => setShowNotifications(false)} />
-                                    <NotificationPanel onClose={() => setShowNotifications(false)} />
+                                    <NotificationPanel onClose={() => setShowNotifications(false)} onRefresh={refreshNotifications} />
                                 </>
                             ) : null}
                         </div>
@@ -127,8 +127,8 @@ const Header: React.FC = () => {
                             className='transition duration-333 ease-in-out text-xl text-[#fff3b0] hover:cursor-pointer hover:scale-110 flex items-center gap-1 group'
                         >
                             <div className="relative h-7 w-7">
-                                <div className="flex h-7 w-7 items-center justify-center rounded-full border border-[#fff3b0] bg-[#1a0f10] text-sm font-bold text-[#fff3b0]">
-                                    ×
+                                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#1a0f10] text-sm font-bold text-[#fff3b0]">
+                                    X
                                 </div>
                                 <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 40 40">
                                     <circle cx="20" cy="20" r="19" fill="none" stroke="#fff3b0" strokeWidth="3" strokeDasharray="120" strokeDashoffset="120" className="transition-all duration-700 ease-in-out group-hover:[stroke-dashoffset:0]" />

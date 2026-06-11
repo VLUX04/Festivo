@@ -27,6 +27,9 @@ const AccountCustomizationPage: React.FC = () => {
   const { saveRegistration } = useRegistration();
 
   const handleSelect = (type: string) => {
+    const label = ACCOUNT_TYPES.find((t) => t.key === type)?.label ?? type;
+    const confirmed = window.confirm(`You are choosing "${label}". This cannot be changed later. Continue?`);
+    if (!confirmed) return;
     saveRegistration({ accountType: type });
     navigate(`/${type}_per`);
   };
@@ -37,6 +40,9 @@ const AccountCustomizationPage: React.FC = () => {
         <div className='w-[82%] border-4 border-[#fff3b0] bg-[#1a0f10] p-8'>
           <h1 className='text-5xl font-bold text-[#fff3b0]'>CHOOSE YOUR ROLE</h1>
           <p className='text-[#a89060] text-xl mt-3'>Select the account type that best describes you.</p>
+          <div className='mt-4 border-2 border-[#e09f3e] bg-[#1a0f10] px-4 py-3 text-sm text-[#e09f3e]'>
+            ⚠ This choice is permanent and cannot be changed after your account is created. Please choose carefully.
+          </div>
         </div>
 
         <div className='w-[82%] grid gap-6 md:grid-cols-3'>
