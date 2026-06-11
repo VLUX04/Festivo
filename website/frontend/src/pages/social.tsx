@@ -677,9 +677,19 @@ const SocialPage: React.FC = () => {
                   className='w-full border-2 border-[#483d30] bg-[#120707] px-4 py-3 text-[#fff3b0] outline-none focus:border-[#fff3b0]'
                 >
                   <option value=''>Select an event to tag...</option>
-                  {availableEvents.map((ev) => (
-                    <option key={ev.id} value={ev.id}>{ev.title} — {ev.date}</option>
-                  ))}
+                  {(() => {
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    const ongoing  = availableEvents.filter((ev) => (ev.rawDate || '') <= todayStr && (ev.rawEdate || ev.rawDate || '') >= todayStr);
+                    const past     = availableEvents.filter((ev) => (ev.rawEdate || ev.rawDate || '') < todayStr);
+                    return (
+                      <>
+                        {ongoing.length > 0 && <option disabled>── Happening Now ──</option>}
+                        {ongoing.map((ev) => <option key={ev.id} value={ev.id}>{ev.title} — {ev.date}</option>)}
+                        {past.length > 0 && <option disabled>── Past Events ──</option>}
+                        {past.map((ev) => <option key={ev.id} value={ev.id}>{ev.title} — {ev.date}</option>)}
+                      </>
+                    );
+                  })()}
                 </select>
               </div>
 

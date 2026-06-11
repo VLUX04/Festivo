@@ -15,6 +15,8 @@ const EventsPage: React.FC = () => {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [geoStatus, setGeoStatus] = useState<'idle' | 'loading' | 'ready' | 'denied'>('idle');
   const [events, setEvents] = useState<React.ComponentProps<typeof EventContainer>['event'][]>([]);
   const [selectedEvent, setSelectedEvent] = useState<React.ComponentProps<typeof EventContainer>['event'] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -59,6 +61,38 @@ const EventsPage: React.FC = () => {
     };
   }, []);
 
+  const haversineKm = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 6371;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLng = ((lng2 - lng1) * Math.PI) / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  };
+
+  const requestUserLocation = () => {
+    if (!navigator.geolocation) { setGeoStatus('denied'); return; }
+    setGeoStatus('loading');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setGeoStatus('ready');
+        setSortBy('proximity-asc');
+      },
+      () => setGeoStatus('denied'),
+      { timeout: 8000 },
+    );
+  };
+
+  const today = useMemo(() => new Date().toISOString().split('T')[0], []);
+
+  const classifyEvent = React.useCallback((event: React.ComponentProps<typeof EventContainer>['event']): 'past' | 'ongoing' | 'upcoming' => {
+    const start = event.rawDate || '';
+    const end = event.rawEdate || start;
+    if (end < today) return 'past';
+    if (start <= today && end >= today) return 'ongoing';
+    return 'upcoming';
+  }, [today]);
+
   const filteredAndSortedEvents = useMemo(() => {
     let filtered = events.filter((event) => {
       const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase());
@@ -98,13 +132,49 @@ const EventsPage: React.FC = () => {
           const bCount = parseInt(b.attending.match(/\d+/)?.[0] || '0');
           return bCount - aCount;
         }
+        case 'proximity-asc': {
+          if (!userCoords) return 0;
+          const distA = (a.latitude != null && a.longitude != null)
+            ? haversineKm(userCoords.lat, userCoords.lng, a.latitude, a.longitude)
+            : Infinity;
+          const distB = (b.latitude != null && b.longitude != null)
+            ? haversineKm(userCoords.lat, userCoords.lng, b.latitude, b.longitude)
+            : Infinity;
+          return distA - distB;
+        }
         default:
           return 0;
       }
     });
-  }, [events, searchQuery, eventType, sortBy, locationFilter, dateFrom, dateTo]);
+  }, [events, searchQuery, eventType, sortBy, locationFilter, dateFrom, dateTo, userCoords]);
+
+  const ongoingEvents  = useMemo(() => filteredAndSortedEvents.filter((e) => classifyEvent(e) === 'ongoing'),         [filteredAndSortedEvents, classifyEvent]);
+  const upcomingEvents = useMemo(() => filteredAndSortedEvents.filter((e) => classifyEvent(e) === 'upcoming'),        [filteredAndSortedEvents, classifyEvent]);
+  const pastEvents     = useMemo(() => [...filteredAndSortedEvents.filter((e) => classifyEvent(e) === 'past')].reverse(), [filteredAndSortedEvents, classifyEvent]);
 
   const highlightedEvents = filteredAndSortedEvents.slice(0, 2);
+
+  const distanceLabel = (event: React.ComponentProps<typeof EventContainer>['event']): string | null => {
+    if (sortBy !== 'proximity-asc' || !userCoords || event.latitude == null || event.longitude == null) return null;
+    const km = haversineKm(userCoords.lat, userCoords.lng, event.latitude, event.longitude);
+    if (km < 1) return '< 1 km';
+    if (km < 1000) return `${Math.round(km)} km`;
+    return `${(km / 1000).toFixed(1)}k km`;
+  };
+
+  const EventWithDistance = ({ event, keyPrefix }: { event: React.ComponentProps<typeof EventContainer>['event']; keyPrefix: string }) => {
+    const dist = distanceLabel(event);
+    return (
+      <div key={`${keyPrefix}-${event.id}`} className='relative'>
+        <EventContainer event={event} onViewDetails={handleViewDetails} />
+        {dist ? (
+          <span className='absolute top-3 left-3 bg-[#1a0f10]/90 border border-[#4caf50] text-[#4caf50] text-xs px-2 py-0.5 font-semibold z-10'>
+            📍 {dist}
+          </span>
+        ) : null}
+      </div>
+    );
+  };
 
   const handleViewDetails = (event: React.ComponentProps<typeof EventContainer>['event']) => {
     setSelectedEvent(event);
@@ -208,18 +278,46 @@ const EventsPage: React.FC = () => {
 
               <div className='flex-1'>
                 <label className='block text-sm font-semibold text-[#fff3b0] mb-2'>Sort By</label>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className='w-full px-4 py-3 bg-[#2a1f20] border-2 border-[#a89060] text-[#fff3b0] focus:outline-none focus:border-[#fff3b0] transition cursor-pointer'>
-                  <option value=''>Select sorting</option>
-                  <option value='name-asc'>Name (A-Z)</option>
-                  <option value='name-desc'>Name (Z-A)</option>
-                  <option value='time-asc'>Time to Event (Soonest)</option>
-                  <option value='time-desc'>Time to Event (Latest)</option>
-                  <option value='people-asc'>People Going (Least)</option>
-                  <option value='people-desc'>People Going (Most)</option>
-                </select>
+                <div className='flex gap-2'>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className='flex-1 px-4 py-3 bg-[#2a1f20] border-2 border-[#a89060] text-[#fff3b0] focus:outline-none focus:border-[#fff3b0] transition cursor-pointer'>
+                    <option value=''>Select sorting</option>
+                    <option value='name-asc'>Name (A-Z)</option>
+                    <option value='name-desc'>Name (Z-A)</option>
+                    <option value='time-asc'>Time to Event (Soonest)</option>
+                    <option value='time-desc'>Time to Event (Latest)</option>
+                    <option value='people-asc'>People Going (Least)</option>
+                    <option value='people-desc'>People Going (Most)</option>
+                    {geoStatus === 'ready' && (
+                      <option value='proximity-asc'>Nearest to Me</option>
+                    )}
+                  </select>
+                  <button
+                    type='button'
+                    onClick={requestUserLocation}
+                    disabled={geoStatus === 'loading'}
+                    title={
+                      geoStatus === 'denied' ? 'Location access denied' :
+                      geoStatus === 'ready'  ? `Location active — click to refresh` :
+                      'Sort by proximity to your location'
+                    }
+                    className={`shrink-0 px-3 py-3 border-2 text-sm transition
+                      ${geoStatus === 'ready'   ? 'border-[#4caf50] text-[#4caf50] hover:bg-[#4caf50]/10' :
+                        geoStatus === 'denied'  ? 'border-[#ff6b6b] text-[#ff6b6b] cursor-not-allowed opacity-60' :
+                        geoStatus === 'loading' ? 'border-[#a89060] text-[#a89060] cursor-wait' :
+                        'border-[#a89060] text-[#a89060] hover:border-[#fff3b0] hover:text-[#fff3b0]'}`}
+                  >
+                    {geoStatus === 'loading' ? '…' : '📍'}
+                  </button>
+                </div>
+                {geoStatus === 'denied' && (
+                  <p className='mt-1 text-xs text-[#ff6b6b]'>Location access was denied by the browser.</p>
+                )}
+                {geoStatus === 'ready' && (
+                  <p className='mt-1 text-xs text-[#4caf50]'>Sorting by distance from your location.</p>
+                )}
               </div>
             </div>
 
@@ -255,11 +353,57 @@ const EventsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className='grid gap-10 md:grid-cols-2 xl:grid-cols-3 mb-7'>
-            {filteredAndSortedEvents.map((event) => (
-              <EventContainer key={`${event.title}-${event.date}`} event={event} onViewDetails={handleViewDetails} />
-            ))}
-          </div>
+          {/* HAPPENING NOW */}
+          {ongoingEvents.length > 0 && (
+            <div className='border-4 border-[#e09f3e] bg-[#1a0f10] p-8'>
+              <div className='flex items-center gap-3 mb-6'>
+                <span className='inline-block h-3 w-3 rounded-full bg-[#e09f3e] animate-pulse' />
+                <h2 className='text-3xl font-bold text-[#e09f3e] uppercase tracking-wider'>Happening Now</h2>
+                <span className='text-sm text-[#a89060] border border-[#e09f3e] px-2 py-0.5'>{ongoingEvents.length} event{ongoingEvents.length !== 1 ? 's' : ''}</span>
+              </div>
+              <div className='grid gap-10 md:grid-cols-2 xl:grid-cols-3'>
+                {ongoingEvents.map((event) => (
+                  <EventWithDistance key={`ongoing-${event.id}`} event={event} keyPrefix='ongoing' />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* UPCOMING */}
+          {upcomingEvents.length > 0 && (
+            <div className='border-4 border-[#fff3b0] bg-[#1a0f10] p-8'>
+              <div className='flex items-center gap-3 mb-6'>
+                <h2 className='text-3xl font-bold text-[#fff3b0] uppercase tracking-wider'>Upcoming Events</h2>
+                <span className='text-sm text-[#a89060] border border-[#fff3b0] px-2 py-0.5'>{upcomingEvents.length} event{upcomingEvents.length !== 1 ? 's' : ''}</span>
+              </div>
+              <div className='grid gap-10 md:grid-cols-2 xl:grid-cols-3'>
+                {upcomingEvents.map((event) => (
+                  <EventWithDistance key={`upcoming-${event.id}`} event={event} keyPrefix='upcoming' />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* PAST */}
+          {pastEvents.length > 0 && (
+            <div className='border-4 border-[#483d30] bg-[#1a0f10] p-8 mb-7'>
+              <div className='flex items-center gap-3 mb-6'>
+                <h2 className='text-3xl font-bold text-[#a89060] uppercase tracking-wider'>Past Events</h2>
+                <span className='text-sm text-[#8b7355] border border-[#483d30] px-2 py-0.5'>{pastEvents.length} event{pastEvents.length !== 1 ? 's' : ''}</span>
+              </div>
+              <div className='grid gap-10 md:grid-cols-2 xl:grid-cols-3 opacity-70'>
+                {pastEvents.map((event) => (
+                  <EventWithDistance key={`past-${event.id}`} event={event} keyPrefix='past' />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {!loading && filteredAndSortedEvents.length === 0 && (
+            <div className='border-4 border-[#483d30] bg-[#1a0f10] p-8 text-[#a89060]'>
+              No events match your filters.
+            </div>
+          )}
         </div>
       </div>
       <EventDetailsModal

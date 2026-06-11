@@ -18,7 +18,14 @@ export const getEventsQuery = `
         e.description,
         e.price,
 		e.ticket_link AS "ticketLink",
-		''::text AS src,
+		COALESCE((
+			SELECT i.url
+			FROM event_images ei
+			JOIN images i ON i.id = ei.image_id
+			WHERE ei.event_id = e.id AND ei.is_cover = TRUE
+			ORDER BY i.id ASC
+			LIMIT 1
+		), '') AS src,
 		COALESCE(e.title, e.description, 'Event') AS alt,
 		0::int AS "attendingCount"
     FROM events e

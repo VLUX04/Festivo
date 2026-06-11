@@ -16,6 +16,7 @@ export interface Event {
     type: string,
     date: string,
     rawDate?: string,
+    rawEdate?: string,
     title: string,
     promoter: string,
     description: string,

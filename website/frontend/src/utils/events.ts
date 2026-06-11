@@ -68,6 +68,7 @@ export const mapEventApiRecord = (event: EventApiRecord): Event => ({
     ? `${formatDate(event.sdate)} - ${formatDate(event.edate)}`
     : formatDate(event.sdate),
   rawDate: event.sdate ? (event.sdate as string).split('T')[0] : '',
+  rawEdate: event.edate ? (event.edate as string).split('T')[0] : '',
   title: event.title || event.description || 'Untitled event',
   promoter: event.promoter || 'Festivo',
   description: event.description || '',
